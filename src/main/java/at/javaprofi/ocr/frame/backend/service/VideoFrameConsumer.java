@@ -1,3 +1,5 @@
+package at.javaprofi.ocr.frame.backend.service;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -8,13 +10,13 @@ import com.github.kokorin.jaffree.ffmpeg.Frame;
 import com.github.kokorin.jaffree.ffmpeg.FrameConsumer;
 import com.github.kokorin.jaffree.ffmpeg.Stream;
 
-public class MyFrameConsumer implements FrameConsumer
+public class VideoFrameConsumer implements FrameConsumer
 {
 
     private long num = 1;
     private final Path pathToDstDir;
 
-    public MyFrameConsumer(Path pathToDstDir)
+    public VideoFrameConsumer(Path pathToDstDir)
     {
         this.pathToDstDir = pathToDstDir;
     }

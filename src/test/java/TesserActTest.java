@@ -16,13 +16,14 @@ public class TesserActTest
         final Tesseract tesseract = new Tesseract();
         tesseract.setDatapath("/usr/local/Cellar/tesseract/4.1.1/share/tessdata");
         tesseract.setLanguage("eng");
+        tesseract.setHocr(true);
 
         String output = null;
 
         try
         {
             final String userRunDir = System.getProperties().getProperty("user.dir");
-            final File file = new File(userRunDir + "/src/test/resources/frame_3.png");
+            final File file = new File(userRunDir + "/src/test/resources/screenshot2.png");
             output = tesseract.doOCR(file);
             System.out.println(output);
         }
@@ -30,8 +31,6 @@ public class TesserActTest
         {
             e.printStackTrace();
         }
-
-        Assert.assertTrue(StringUtils.containsIgnoreCase(output, "career-defining"));
     }
 
 }

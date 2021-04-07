@@ -8,6 +8,8 @@ import com.github.kokorin.jaffree.ffmpeg.FFmpeg;
 import com.github.kokorin.jaffree.ffmpeg.FrameOutput;
 import com.github.kokorin.jaffree.ffmpeg.UrlInput;
 
+import at.javaprofi.ocr.frame.backend.service.VideoFrameConsumer;
+
 public class JaffreeTest
 {
 
@@ -15,7 +17,7 @@ public class JaffreeTest
     public void extractFrames()
     {
         final String userRunDir = System.getProperties().getProperty("user.dir");
-        final String pathToSource = userRunDir + "/src/test/resources/test1.mp4";
+        final String pathToSource = userRunDir + "/src/test/resources/test3.mp4";
         final String pathToDest = userRunDir + "/src/test/resources/";
 
         final Path pathToSrc = Paths.get(pathToSource);
@@ -26,7 +28,7 @@ public class JaffreeTest
                 .fromPath(pathToSrc)
             )
             .addOutput(FrameOutput
-                .withConsumer(new MyFrameConsumer(pathToDstDir))
+                .withConsumer(new VideoFrameConsumer(pathToDstDir))
                 // No more then 100 frames
                 .setFrameCount(StreamType.VIDEO, 100L)
                 // 20 frame every quarter second
