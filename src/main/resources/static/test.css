@@ -1,0 +1,140 @@
+* {
+    box-sizing: border-box;
+    font-family: 'Duru Sans', 'DejaVu Sans', 'Arial';
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+header {
+    text-align: center;
+    padding: 0 0 30px;
+}
+
+button {
+    margin: 4px;
+}
+
+form {
+    display: table;
+
+}
+
+#projectheader {
+    font-family: "Faster One", sans-serif;
+    color: green;
+    font-size: 3em;
+    transition: all 1s ease;
+}
+
+#projectheader:hover {
+    color: blue;
+    transition: all 2s ease;
+}
+
+nav ul, nav a {
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+    font-size: 1.2em;
+    background-color: green;
+
+    color: black;
+    list-style-type: none;
+    border: none;
+    text-decoration: none;
+    border-radius: 20px;
+
+
+}
+
+nav li {
+    float: left;
+    padding: 0px 15px;
+}
+
+nav a:hover {
+    background-color: dimgray;
+}
+
+footer ul li {
+    display: inline-block;
+}
+
+p {
+    text-align: left;
+}
+
+#wrapper {
+    width: 1440px;
+    max-width: none;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#nav_container {
+    display: inline-block;
+    text-align: center;
+    position: relative;
+}
+
+.col-1 {
+    width: 100px;
+}
+
+.col-2 {
+    width: 220px;
+}
+
+.col-3 {
+    width: 340px;
+}
+
+.col-4 {
+    width: 460px;
+}
+
+.col-5 {
+    width: 580px;
+}
+
+.col-6 {
+    width: 700px;
+}
+
+.col-7 {
+    width: 820px;
+}
+
+.col-8 {
+    width: 940px;
+}
+
+.col-9 {
+    width: 1060px;
+}
+
+.col-10 {
+    width: 1180px;
+}
+
+.col-11 {
+    width: 1300px;
+}
+
+.col-12 {
+    width: 1420px;
+}
+
+[class*="col-"] {
+    float: left;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.clear, .row {
+    clear: both;
+}
