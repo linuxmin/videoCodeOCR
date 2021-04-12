@@ -12,7 +12,7 @@
     <!-- jQuery library -->
     <script type="text/javascript" th:src="@{jquery.min.js}"></script>
     <script type="text/javascript" th:src="@{bootstrap.bundle.js}"></script>
-
+    <script type="text/javascript" th:src="@{d3.js}"></script>
 
     <!-- Latest compiled JavaScript -->
     <script type="text/javascript" th:src="@{http_maxcdn.bootstrapcdn.com_bootstrap_4.5.2_js_bootstrap.js}"></script>
@@ -44,10 +44,12 @@
     <main>
         <div id="home">
             <h1>Das Projekt videoOCR</h1>
-            <p id="paragraph">TBD
-            </p>
+            <p id="paragraph">First paragraph</p>
+            <p>Second Paragraph</p>
         </div>
     </main>
 </div>
-</body>
+<script>
+    d3.select("#paragraph").style("color", "green");
+</script></body>
 </html>

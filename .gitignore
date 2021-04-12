@@ -4,9 +4,9 @@
 # Log file
 *.log
 
-#Directories for upload and extracted files
+#Directories for filestorage and extracted files
 /extracted-dir
-/upload-dir
+/filestorage-dir
 
 # BlueJ files
 *.ctxt

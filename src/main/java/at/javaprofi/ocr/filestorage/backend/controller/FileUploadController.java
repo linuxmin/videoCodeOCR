@@ -1,4 +1,4 @@
-package at.javaprofi.ocr.upload.backend.controller;
+package at.javaprofi.ocr.filestorage.backend.controller;
 
 import java.net.MalformedURLException;
 import java.util.stream.Collectors;
@@ -21,26 +21,25 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import at.javaprofi.ocr.frame.api.service.FrameExtractorService;
-import at.javaprofi.ocr.upload.api.UploadService;
+import at.javaprofi.ocr.filestorage.api.service.FileStorageService;
 
 @Controller
 public class FileUploadController
 {
     private static final Logger LOG = LoggerFactory.getLogger(FileUploadController.class);
 
-    private final UploadService uploadService;
+    private final FileStorageService fileStorageService;
 
     @Autowired
-    public FileUploadController(UploadService uploadService)
+    public FileUploadController(FileStorageService fileStorageService)
     {
-        this.uploadService = uploadService;
+        this.fileStorageService = fileStorageService;
     }
 
     @GetMapping("/video")
     public String listUploadedFiles(Model model)
     {
-        model.addAttribute("files", uploadService.loadVideos().map(
+        model.addAttribute("files", fileStorageService.loadVideos().map(
             path -> MvcUriComponentsBuilder.fromMethodName(FileUploadController.class,
                 "serveFile", path.getFileName().toString()).build())
             .collect(Collectors.toList()));
@@ -54,7 +53,7 @@ public class FileUploadController
     {
         try
         {
-            Resource file = uploadService.loadAsResource(filename);
+            Resource file = fileStorageService.loadAsResource(filename);
 
             return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
                 "attachment; filename=\"" + file.getFilename() + "\"").body(file);
@@ -69,7 +68,7 @@ public class FileUploadController
     @PostMapping("/video")
     public String handleFileUpload(@RequestParam("file") MultipartFile file)
     {
-        uploadService.store(file);
+        fileStorageService.store(file);
 
         return "redirect:/video";
     }
@@ -77,7 +76,7 @@ public class FileUploadController
     @ExceptionHandler(RuntimeException.class)
     public String handleFileUploadExceptions(RedirectAttributes redirectAttributes, RuntimeException ex)
     {
-        LOG.error("Exception occurred while handling files/upload with following message: {}", ex.getMessage());
+        LOG.error("Exception occurred while handling files/filestorage with following message: {}", ex.getMessage());
         ex.printStackTrace();
         redirectAttributes.addFlashAttribute("message",
             ex.getMessage());

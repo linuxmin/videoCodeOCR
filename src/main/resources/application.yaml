@@ -1,0 +1,12 @@
+spring:
+  servlet:
+    multipart:
+      max-file-size: 128MB
+      max-request-size: 128MB
+  config:
+    activate:
+      on-profile: dev
+logging:
+  level:
+    at.javaprofi.ocr.frame.backend.service: debug
+
