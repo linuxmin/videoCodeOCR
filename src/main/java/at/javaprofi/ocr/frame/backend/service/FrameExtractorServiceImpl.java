@@ -1,14 +1,13 @@
 package at.javaprofi.ocr.frame.backend.service;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,13 +21,16 @@ import com.github.kokorin.jaffree.ffmpeg.UrlInput;
 import at.javaprofi.ocr.filestorage.api.dao.PathContainer;
 import at.javaprofi.ocr.filestorage.api.service.FileStorageService;
 import at.javaprofi.ocr.frame.api.service.FrameExtractorService;
+import net.sourceforge.tess4j.ITesseract;
+import net.sourceforge.tess4j.OCRResult;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
+import net.sourceforge.tess4j.Word;
 
 @Service
 public class FrameExtractorServiceImpl implements FrameExtractorService
 {
-    private static final List<String> VIDOE_FILTER = Arrays.asList(".mp4");
+    private static final List<String> VIDEO_FILTER = Arrays.asList(".mp4");
     private static final Logger LOG = LoggerFactory.getLogger(FrameExtractorServiceImpl.class);
 
     private final FileStorageService fileStorageService;
@@ -42,20 +44,59 @@ public class FrameExtractorServiceImpl implements FrameExtractorService
     @Override
     public void extractCodeFromVideo(String fileName)
     {
-       if (VIDOE_FILTER.stream().noneMatch(fileName::endsWith))
+        if (VIDEO_FILTER.stream().noneMatch(fileName::endsWith))
         {
             throw new RuntimeException("No video file provided");
-
         }
 
-
-        final Tesseract tesseract = new Tesseract();
-        tesseract.setDatapath("/usr/local/Cellar/tesseract/4.1.1/share/tessdata");
-        tesseract.setLanguage("eng");
-        tesseract.setHocr(true);
+        final Tesseract tesseract = getTesseractInstance(true);
 
         final PathContainer pathContainer =
             fileStorageService.createDirectoriesAndRetrievePathContainerFromVideoFileName(fileName);
+
+        extractFramesToFramePath(pathContainer);
+
+        final Path framesPath = pathContainer.getFramesPath();
+        final Path hocrPath = pathContainer.getHocrPath();
+
+        try (final Stream<Path> framePathStream =
+            fileStorageService.retrieveContainingFilesAsPathStream(framesPath))
+        {
+            framePathStream.forEach(framePath -> doOCRandWriteHocrToXML(tesseract, hocrPath, framePath));
+        }
+    }
+
+    private Tesseract getTesseractInstance(boolean hocr)
+    {
+        final Tesseract tesseract = new Tesseract();
+        tesseract.setDatapath("/usr/local/Cellar/tesseract/4.1.1/share/tessdata");
+        tesseract.setLanguage("eng");
+        tesseract.setHocr(hocr);
+        return tesseract;
+    }
+
+    @Override
+    public List<Word> extractWordsFromVideo(String fileName)
+    {
+        final Tesseract tesseract = getTesseractInstance(false);
+        final PathContainer pathContainer =
+            fileStorageService.createDirectoriesAndRetrievePathContainerFromVideoFileName(fileName);
+
+        extractFramesToFramePath(pathContainer);
+
+        final List<Word> wordList = new ArrayList<>();
+
+        try (final Stream<Path> framePathStream = fileStorageService.retrieveContainingFilesAsPathStream(
+            pathContainer.getFramesPath()))
+        {
+            framePathStream.forEach(framePath -> wordList.addAll(retrieveWords(tesseract,framePath.toFile())));
+        }
+
+        return null;
+    }
+
+    private void extractFramesToFramePath(PathContainer pathContainer)
+    {
         final Path videoPath = pathContainer.getVideoPath();
         final Path framesPath = pathContainer.getFramesPath();
 
@@ -64,35 +105,44 @@ public class FrameExtractorServiceImpl implements FrameExtractorService
                 .fromPath(videoPath))
             .addOutput(FrameOutput
                 .withConsumer(new VideoFrameConsumer(framesPath))
-                // No more then 100 frames
-                .setFrameCount(StreamType.VIDEO, 2L)
-                // 5 frame every second
-                .setFrameRate(5)
-                // Disable all streams except video
+                .setFrameCount(StreamType.VIDEO, 100L)
+                .setFrameRate(1)
                 .disableStream(StreamType.AUDIO)
                 .disableStream(StreamType.SUBTITLE)
                 .disableStream(StreamType.DATA))
             .execute();
+    }
 
-        final Path hocrPath = pathContainer.getHocrPath();
-
-        try (final Stream<Path> framePathStream =
-            fileStorageService.retrieveContainingFilesAsPathStream(framesPath))
+    private void doOCRandWriteHocrToXML(Tesseract tesseract, Path hocrPath, Path framePath)
+    {
+        final File frameFile = framePath.toFile();
+        String codeFromFrame;
+        try
         {
-            framePathStream.forEach(framePath -> {
-                try
-                {
-                    final File frameFile = framePath.toFile();
-                    String codeFromFrame = tesseract.doOCR(frameFile.getAbsoluteFile());
-                    fileStorageService.writeHocrToXML(codeFromFrame, hocrPath, framePath);
-                    LOG.info("Extracted frames from: {}", frameFile);
-
-                }
-                catch (TesseractException e)
-                {
-                    throw new RuntimeException(e);
-                }
-            });
+            codeFromFrame = tesseract.doOCR(frameFile.getAbsoluteFile());
+            LOG.info("Extracted frames from: {}", frameFile);
         }
+        catch (TesseractException e)
+        {
+            throw new RuntimeException("Exception during OCR occurred", e);
+        }
+        fileStorageService.writeHocrToXML(codeFromFrame, hocrPath, framePath);
+    }
+
+    private List<Word> retrieveWords(Tesseract tesseract, File frameFile)
+    {
+        final OCRResult documentsWithResults;
+        try
+        {
+            documentsWithResults =
+                tesseract.createDocumentsWithResults(frameFile.getAbsoluteFile().toString(), "test.xml",
+                    Collections.singletonList(ITesseract.RenderedFormat.HOCR), 1);
+        }
+        catch (TesseractException e)
+        {
+            throw new RuntimeException("Exception during OCR occurred", e);
+        }
+
+        return documentsWithResults.getWords();
     }
 }

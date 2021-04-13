@@ -1,16 +1,9 @@
 import static org.junit.Assert.assertEquals;
 
-import java.io.IOException;
-import java.nio.file.FileVisitOption;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.stream.Stream;
 
-import org.apache.commons.io.FilenameUtils;
 import org.junit.Test;
-
-import com.sun.tools.javac.util.Assert;
 
 import at.javaprofi.ocr.filestorage.api.StorageProperties;
 import at.javaprofi.ocr.filestorage.backend.service.FileStorageServiceImpl;
@@ -38,7 +31,8 @@ public class PathTest
         assertEquals(UPLOAD_DIR, uploadDir.toString());
         assertEquals(EXTRACTED_DIR, extractedDir.toString());
 
-        FrameExtractorServiceImpl frameExtractorService = new FrameExtractorServiceImpl(new FileStorageServiceImpl(new StorageProperties()));
+        FrameExtractorServiceImpl frameExtractorService =
+            new FrameExtractorServiceImpl(new FileStorageServiceImpl(new StorageProperties()));
         frameExtractorService.extractCodeFromVideo("file");
 
         /*
@@ -52,28 +46,12 @@ public class PathTest
         The call: Path resolvedPath = basePath.resolve(otherPath) produces the resolvedPath which is the new base path of the other path
         e.g. the basePath is 'brian/downloads' and other path is 'documents/pictures' then the resolvedPath is 'brian/downloads/documents/pictures'
          */
-        final Path resolvedPicturePath = Paths.get("brian", "downloads","documents", "pictures");
+        final Path resolvedPicturePath = Paths.get("brian", "downloads", "documents", "pictures");
         final Path basePath = Paths.get("brian", "downloads");
         final Path picturePath = Paths.get("documents", "pictures");
 
         assertEquals(basePath.resolve(picturePath), resolvedPicturePath);
         assertEquals(currentRunningDir.toAbsolutePath().resolve(uploadDir), uploadDir.toAbsolutePath());
-
-        /*
-        uploadDir.relativize(extractedDir) gets the path necessary to reach the extractedDir from uploadDir
-         */
-        assertEquals(uploadDir.relativize(extractedDir).toString(), "../extracted-dir");
-
-        try
-        {
-            final Stream<Path> uploadPathContent = Files.walk(uploadDir, 1);
-            uploadPathContent.filter(path -> !Files.isDirectory(path)).forEach(System.out::println);
-
-        }
-        catch (IOException e)
-        {
-            Assert.error(e.toString());
-        }
 
     }
 

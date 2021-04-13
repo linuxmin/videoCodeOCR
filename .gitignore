@@ -7,7 +7,8 @@
 #Directories for filestorage and extracted files
 /extracted-dir
 /filestorage-dir
-
+/exported-dir
+*.hocr
 # BlueJ files
 *.ctxt
 
