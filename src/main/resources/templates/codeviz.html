@@ -1,4 +1,5 @@
-<html xmlns:th="https://www.thymeleaf.org">
+<!DOCTYPE html>
+<html lang="en" xmlns:="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
 <head>
     <!--<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
 
@@ -13,24 +14,34 @@
     <script type="text/javascript" th:src="@{bootstrap.bundle.js}"></script>
 
 
+    <script type="text/javascript" th:src="@{d3.js}"></script>
+
+
     <!-- Latest compiled JavaScript -->
     <script type="text/javascript" th:src="@{http_maxcdn.bootstrapcdn.com_bootstrap_4.5.2_js_bootstrap.js}"></script>
+
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <title>Chord Diagram</title>
+    <!-- <script type="text/javascript" src="http://fleetinbeing.net/d3/d3.layout.js"></script> -->
+    <!-- This comes from here: http://fleetinbeing.net/d3e/chord.html -->
+    <!-- Another example comes from here: http://exposedata.com/tutorial/chord/latest.html -->
+    <style>
+        .bar {
+            fill: steelblue;
+        }
+    </style>
     <meta charset="UTF-8">
     <title>Test</title>
 </head>
-<body>
-<div th:if="${message}">
-    <h2 th:text="${message}"/>
-</div>
 <div id="wrapper">
     <header class="col-12 clear">
         <strong id="projectheader">videoOCR Source Code Extractor</strong>
         <div id="nav_container">
             <ul class="nav nav-tabs">
-                <li class="nav-item"><a class="nav-link" th:href="@{home}">Home</a></li>
+                <li class="nav-item"><a class="nav-link active" href="#">Home</a></li>
                 <li class="nav-item"><a class="nav-link" href="#">Documentation</a></li>
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle active" data-toggle="dropdown" href="#">OCR Extraction</a>
+                    <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">OCR Extraction</a>
                     <div class="dropdown-menu">
                         <a class="dropdown-item" th:href="@{video}">Choose/Manage Videos</a>
                         <a class="dropdown-item" href="#">Manage Frames</a>
@@ -38,42 +49,18 @@
                         <a class="dropdown-item" href="#">Manage Mapping</a>
                     </div>
                 </li>
-                <li class="nav-item"><a class="nav-link" th:href="@{visualization}">Visualization</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{visualization}">Sample Visualization</a></li>
                 <li class="nav-item"><a class="nav-link" th:href="@{codeviz}" href="#">Code Visualization</a></li>
             </ul>
         </div>
     </header>
-    <main>
-        <div class="container">
-            <form method="POST" enctype="multipart/form-data" action="/video">
-                <table>
-                    <tr>
-                        <td>File to upload:</td>
-                        <td><input type="file" name="file"/></td>
-                    </tr>
-                    <tr>
-                        <td></td>
-                        <td><input type="submit" value="Upload"/></td>
-                    </tr>
-                </table>
-            </form>
-        </div>
-
-        <div class="container">
-            <ul>
-                <table class="table">
-                    <tr th:each="file : ${files}">
-                        <td><a th:href="${file}" th:text="${file}"/></td>
-                        <td><form th:action="@{/extract}"  method="post">
-                            <input type="hidden" th:value="${file}" name="fileName"/>
-                            <input type="submit" value="Extract Code"/>
-                        </form>
-                        </td>
-                    </tr>
-                </table>
-            </ul>
-        </div>
-    </main>
+    <body>
+    <svg width="1024" height="768"></svg>
+    </body>
 </div>
+<script type="text/javascript" th:src="@{codevisualization.js}"></script>
+<script>
+    d3.select("#paragraph").style("color", "green");
+</script>
 </body>
 </html>
