@@ -12,4 +12,17 @@ public class HomeController
     {
         return "home";
     }
+
+    @GetMapping("/visualization")
+    public String showVisualization()
+    {
+        return "visualization";
+    }
+
+
+    @GetMapping("/codeviz")
+    public String showVCodeVisualization()
+    {
+        return "codeviz";
+    }
 }

@@ -1,6 +1,5 @@
-package at.javaprofi.ocr.upload.backend.service;
+package at.javaprofi.ocr.filestorage.backend.service;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -9,11 +8,11 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
 import java.util.stream.Stream;
 
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,47 +22,37 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import at.javaprofi.ocr.upload.api.StorageProperties;
-import at.javaprofi.ocr.upload.api.UploadService;
+import at.javaprofi.ocr.filestorage.api.StorageProperties;
+import at.javaprofi.ocr.filestorage.api.dao.PathContainer;
+import at.javaprofi.ocr.filestorage.api.service.FileStorageService;
 
 @Service
-public class UploadServiceImpl implements UploadService
+public class FileStorageServiceImpl implements FileStorageService
 {
 
-    private static final Logger LOG = LoggerFactory.getLogger(UploadServiceImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FileStorageServiceImpl.class);
 
     private final Path videoLocation;
     private final Path frameLocation;
 
     @Autowired
-    public UploadServiceImpl(StorageProperties properties)
+    public FileStorageServiceImpl(StorageProperties properties)
     {
         this.videoLocation = Paths.get(properties.getVideoLocation());
         this.frameLocation = Paths.get(properties.getFrameLocation());
     }
 
     @Override
-    public void saveHocrStringAsXML(String videoFileName, List<String> hocrList)
+    public void writeHocrToXML(String hocrString, Path hocrPath, Path framePath)
     {
-
-        for (int i = 0, frameHocrListSize = hocrList.size(); i < frameHocrListSize; i++)
+        try
         {
-            String frame = hocrList.get(i);
-            try
-            {
-                final Path path = frameLocation.resolve(
-                    Paths.get(videoFileName + i + ".xml"))
-                    .normalize().toAbsolutePath();
-
-                final File file = path.toFile();
-                FileUtils.writeStringToFile(file, frame,
-                    "UTF-8");
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException(videoFileName + " Saving hocr xml failed! ", e);
-            }
-
+            final Path xmlFilePath = hocrPath.resolve(FilenameUtils.removeExtension(framePath.getFileName().toString()) + ".xml");
+            Files.write(xmlFilePath, Collections.singleton(hocrString));
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
         }
     }
 
@@ -91,7 +80,8 @@ public class UploadServiceImpl implements UploadService
 
             if (!destinationFile.getParent().equals(this.videoLocation.toAbsolutePath()))
             {
-                throw new RuntimeException(originalFilename + "Uploading file outside upload directory not allowed!");
+                throw new RuntimeException(
+                    originalFilename + "Uploading file outside filestorage directory not allowed!");
             }
             try (InputStream inputStream = file.getInputStream())
             {
@@ -151,7 +141,7 @@ public class UploadServiceImpl implements UploadService
     }
 
     @Override
-    public Path load(String fileName)
+    public Path resolveVideoSourcePathFromFileName(String fileName)
     {
         return videoLocation.resolve(fileName);
     }
@@ -159,14 +149,15 @@ public class UploadServiceImpl implements UploadService
     @Override
     public Resource loadAsResource(String fileName)
     {
-        final Path file = load(fileName);
+        final Path file = resolveVideoSourcePathFromFileName(fileName);
         try
         {
             return new UrlResource(file.toUri());
         }
         catch (MalformedURLException e)
         {
-            throw new RuntimeException("Failed to load file:" + fileName + " as resource! ", e);
+            throw new RuntimeException(
+                "Failed to resolveVideoSourcePathFromFileName file:" + fileName + " as resource! ", e);
         }
     }
 
@@ -190,4 +181,45 @@ public class UploadServiceImpl implements UploadService
             throw new RuntimeException("Could not initialize storage! ", e);
         }
     }
+
+    @Override
+    public Stream<Path> retrieveContainingFilesAsPathStream(Path pathToTraverse)
+    {
+        {
+            try
+            {
+                return Files.walk(pathToTraverse, 1)
+                    .filter(path -> !Files.isDirectory(path));
+
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeException("Could not retrieve files from path!", e);
+            }
+        }
+    }
+
+    @Override
+    public PathContainer createDirectoriesAndRetrievePathContainerFromVideoFileName(String fileName)
+    {
+        final Path videoFileName = Paths.get(fileName).getFileName();
+        final Path videoPath = videoLocation.resolve(videoFileName);
+        final Path framePath = frameLocation.resolve(FilenameUtils.removeExtension(videoFileName.toString()));
+        final Path hocrPath = framePath.resolve("hocr");
+
+        try
+        {
+            Files.createDirectories(framePath.toAbsolutePath());
+            Files.createDirectories(hocrPath);
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException("Exception while creating frame/hocr directories", e);
+        }
+
+        return new PathContainer.PathContainerBuilder().videoPath(videoPath)
+            .framesPath(framePath)
+            .hocrPath(hocrPath).build();
+    }
+
 }

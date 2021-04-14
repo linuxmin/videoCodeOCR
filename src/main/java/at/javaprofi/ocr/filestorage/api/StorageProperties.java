@@ -1,4 +1,4 @@
-package at.javaprofi.ocr.upload.api;
+package at.javaprofi.ocr.filestorage.api;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -9,7 +9,7 @@ public class StorageProperties
 	/**
 	 * Folder location for storing videos
 	 */
-	private String videoLocation = "upload-dir";
+	private String videoLocation = "filestorage-dir";
 
 	/**
 	 * Folder location for storing frames

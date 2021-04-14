@@ -12,7 +12,7 @@
     <!-- jQuery library -->
     <script type="text/javascript" th:src="@{jquery.min.js}"></script>
     <script type="text/javascript" th:src="@{bootstrap.bundle.js}"></script>
-
+    <script type="text/javascript" th:src="@{d3.js}"></script>
 
     <!-- Latest compiled JavaScript -->
     <script type="text/javascript" th:src="@{http_maxcdn.bootstrapcdn.com_bootstrap_4.5.2_js_bootstrap.js}"></script>
@@ -36,18 +36,112 @@
                         <a class="dropdown-item" href="#">Manage Mapping</a>
                     </div>
                 </li>
-                <li class="nav-item"><a class="nav-link" href="#">About</a></li>
-                <li class="nav-item"><a class="nav-link" href="#">Impressum/Disclaimer</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{visualization}">Visualization</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{codeviz}" href="#">Code Visualization</a></li>
             </ul>
         </div>
     </header>
     <main>
+        <div th:if="${message}">
+            <h2 th:text="${message}"/>
+        </div>
+        <style>
+            path {
+                fill: green;
+                stroke: #aaa;
+            }
+        </style>
+
+        <body>
+
+        <script type="text/javascript" th:inline="javascript">
+
+            var margin = {top: 20, right: 20, bottom: 20, left: 20},
+                width = 600 - margin.left - margin.right,
+                height = 270 - margin.top - margin.bottom;
+
+
+            var xData = new Array();
+            var yData = new Array();
+
+            d3.select('path').attr('d', pathString);
+
+            [# th
+            :
+            each = "word : ${wordList}"
+            ]
+            xData.push(/*[[(${word.boundingBox.x})]]*/);
+            yData.push(/*[[(${word.boundingBox.y})]]*/);
+            [/]
+
+            var lineGenerator = d3.line();
+            var xy = []; // start empty, add each element one at a time
+            for (var i = 0; i < xData.length; i++) {
+                xy.push({x: xData[i], y: yData[i]});
+            }
+            var pathString = lineGenerator(xy);
+
+            console.log("xy is:", xy); // shows the data structure
+
+            var xscl = d3.scaleLinear()
+                .domain(d3.extent(xy, function (d) {
+                    return d.x;
+                })) //use just the x part
+                .range([margin.left, width + margin.left])
+
+            var yscl = d3.scaleLinear()
+                .domain(d3.extent(xy, function (d) {
+                    return d.y;
+                })) // use just the y part
+                .range([height + margin.top, margin.top])
+
+            var slice = d3.line()
+                .x(function (d) {
+                    return xscl(d.x);
+                }) // apply the x scale to the x data
+                .y(function (d) {
+                    return yscl(d.y);
+                }) // apply the y scale to the y data
+
+            console.log("slice(xy) is:", slice(xy)); // shows the exact pen moves
+
+            var svg = d3.select("body")
+                .append("svg")
+
+            svg.append('rect') // outline for reference
+                .attr({
+                    x: margin.left, y: margin.top,
+                    width: width,
+                    height: height,
+                    stroke: 'black',
+                    'stroke-width': 0.5,
+                    fill: 'white'
+                });
+
+            svg.append("path")
+                .attr("class", "line")
+                .attr("d", slice(xy)) // use the return value of slice(xy) as the data, 'd'
+                .style("fill", "none")
+                .style("stroke", "red")
+                .style("stroke-width", 2);
+
+            console.log(xy);
+
+        </script>
         <div id="home">
             <h1>Das Projekt videoOCR</h1>
-            <p id="paragraph">TBD
-            </p>
+            <p id="paragraph">First paragraph</p>
+            <p>Second Paragraph</p>
+            <tbody>
+            <tr th:each="word: ${wordList}">
+                <td th:text="${word.text}"/>
+            </tr>
+            </tbody>
         </div>
     </main>
 </div>
+<script>
+    d3.select("#paragraph").style("color", "green");
+</script>
 </body>
 </html>

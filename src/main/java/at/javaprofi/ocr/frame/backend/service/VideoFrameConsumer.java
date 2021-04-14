@@ -1,5 +1,6 @@
 package at.javaprofi.ocr.frame.backend.service;
 
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -9,6 +10,8 @@ import javax.imageio.ImageIO;
 import com.github.kokorin.jaffree.ffmpeg.Frame;
 import com.github.kokorin.jaffree.ffmpeg.FrameConsumer;
 import com.github.kokorin.jaffree.ffmpeg.Stream;
+
+import net.sourceforge.tess4j.util.ImageHelper;
 
 public class VideoFrameConsumer implements FrameConsumer
 {
@@ -36,12 +39,13 @@ public class VideoFrameConsumer implements FrameConsumer
             return;
         }
 
-        String filename = "frame_" + num++ + ".png";
+        final BufferedImage invertedColor = ImageHelper.invertImageColor(frame.getImage());
+        String filename = "frame_" + num++ + ".jpg";
         Path output = pathToDstDir.resolve(filename);
 
         try
         {
-            ImageIO.write(frame.getImage(), "png", output.toFile());
+            ImageIO.write(invertedColor, "jpg", output.toFile());
         }
         catch (IOException e)
         {

@@ -8,8 +8,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
-import at.javaprofi.ocr.upload.api.StorageProperties;
-import at.javaprofi.ocr.upload.api.UploadService;
+import at.javaprofi.ocr.filestorage.api.StorageProperties;
+import at.javaprofi.ocr.filestorage.api.service.FileStorageService;
 
 @SpringBootApplication
 @EnableConfigurationProperties(StorageProperties.class)
@@ -25,10 +25,10 @@ public class OCRApplication
     }
 
     @Bean
-    CommandLineRunner init(UploadService uploadService)
+    CommandLineRunner init(FileStorageService fileStorageService)
     {
         return (args) -> {
-            uploadService.init();
+            fileStorageService.init();
         };
     }
 }
