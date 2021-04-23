@@ -33,7 +33,7 @@ public class PathTest
 
         FrameExtractorServiceImpl frameExtractorService =
             new FrameExtractorServiceImpl(new FileStorageServiceImpl(new StorageProperties()));
-        frameExtractorService.extractCodeFromVideo("file");
+        frameExtractorService.extractCodeFromVideo("file", true);
 
         /*
         if Paths.get(String names...) is called with an empty string, then the resulting absolute path is the running path

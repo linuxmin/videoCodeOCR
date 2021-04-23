@@ -15,11 +15,11 @@ var x = d3.scaleBand().range([0, width]).padding(0.4),
 
 var g = svg.append("g")
     .attr("transform", "translate(" + 100 + "," + 100 + ")");
-var dataCsv = d3.csv("fixations.csv");
+var dataCsv = d3.csv("examples/fixations.csv");
 dataCsv.then(function( data) {
 
-    x.domain(data.map(function(d) { return d.start_timestamp; }));
-    //x.domain([d3.min(data, function(d) { return d.start_timestamp; }), d3.max(data, function(d) { return d.start_timestamp; })]);
+    x.domain(data.map(function(d) { return d.start_frame_index; }));
+    //x.domain([d3.min(data, function(d) { return d.start_frame_index; }), d3.max(data, function(d) { return d.start_frame_index; })]);
 
     y.domain([0, d3.max(data, function(d) { return d.fixation_duration; })]);
 
@@ -51,7 +51,7 @@ dataCsv.then(function( data) {
         .attr("class", "bar")
         .on("mouseover", onMouseOver) //Add listener for the mouseover event
         .on("mouseout", onMouseOut)   //Add listener for the mouseout event
-        .attr("x", function(d) { return x(d.start_timestamp); })
+        .attr("x", function(d) { return x(d.start_frame_index); })
         .attr("y", function(d) { return y(d.fixation_duration); })
         .attr("width", x.bandwidth())
         .transition()
@@ -76,7 +76,7 @@ function onMouseOver(d, i) {
     g.append("text")
         .attr('class', 'val')
         .attr('x', function() {
-            return x(i.start_timestamp);
+            return x(i.start_frame_index);
         })
         .attr('y', function() {
             return y(i.fixation_duration + 15);

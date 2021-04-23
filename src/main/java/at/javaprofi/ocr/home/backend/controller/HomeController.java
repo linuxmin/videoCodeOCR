@@ -25,4 +25,10 @@ public class HomeController
     {
         return "codeviz";
     }
+
+    @GetMapping("/animation")
+    public String showAnimation()
+    {
+        return "animation";
+    }
 }

@@ -1,4 +1,5 @@
-<html xmlns:th="https://www.thymeleaf.org">
+<!DOCTYPE html>
+<html lang="en" xmlns:="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
 <head>
     <!--<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
 
@@ -11,17 +12,35 @@
     <!-- jQuery library -->
     <script type="text/javascript" th:src="@{jquery.min.js}"></script>
     <script type="text/javascript" th:src="@{bootstrap.bundle.js}"></script>
+    <script type="text/javascript" th:src="@{d3v4.js}"></script>
 
 
     <!-- Latest compiled JavaScript -->
     <script type="text/javascript" th:src="@{http_maxcdn.bootstrapcdn.com_bootstrap_4.5.2_js_bootstrap.js}"></script>
+
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <title>Chord Diagram</title>
+    <!-- <script type="text/javascript" src="http://fleetinbeing.net/d3/d3.layout.js"></script> -->
+    <!-- This comes from here: http://fleetinbeing.net/d3e/chord.html -->
+    <!-- Another example comes from here: http://exposedata.com/tutorial/chord/latest.html -->
+    <style>
+        path {
+            fill: none;
+            stroke: #999;
+        }
+
+
+        svg {
+            display: block;
+            margin-left: auto;
+            margin-right: auto
+        }
+    </style>
+
     <meta charset="UTF-8">
     <title>Test</title>
 </head>
 <body>
-<div th:if="${message}">
-    <h2 th:text="${message}"/>
-</div>
 <div id="wrapper">
     <header class="col-12 clear">
         <strong id="projectheader">videoOCR Source Code Extractor</strong>
@@ -42,48 +61,22 @@
                 <li class="nav-item"><a class="nav-link" th:href="@{codeviz}" href="#">Eye Gaze Duration</a></li>
             </ul>
         </div>
+        <script type="text/javascript" th:src="@{animation2.js}"></script>
     </header>
-    <main>
-        <div class="container">
-            <form method="POST" enctype="multipart/form-data" action="/video">
-                <table>
-                    <tr>
-                        <td>File to upload:</td>
-                        <td><input type="file" name="file"/></td>
-                    </tr>
-                    <tr>
-                        <td></td>
-                        <td><input type="submit" value="Upload"/></td>
-                    </tr>
-                </table>
-            </form>
-        </div>
-
-        <div class="container">
-            <ul>
-                <table class="table">
-                    <tr th:each="file : ${files}">
-                        <td><a th:href="${file}" th:text="${file}"/></td>
-                        <td><form th:action="@{/visualize}"  method="post">
-                            <input type="hidden" th:value="${file}" name="fileName"/>
-                            <input type="submit" value="Visualize Code"/>
-                        </form>
-                        </td>
-                        <td><form th:action="@{/extract}"  method="post">
-                            <input type="hidden" th:value="${file}" name="fileName"/>
-                            <input type="submit" value="Extract Code as Text"/>
-                        </form>
-                        </td>
-                        <td><form th:action="@{/extractHocr}"  method="post">
-                            <input type="hidden" th:value="${file}" name="fileName"/>
-                            <input type="submit" value="Extract Code as HOCR"/>
-                        </form>
-                        </td>
-                    </tr>
-                </table>
-            </ul>
-        </div>
-    </main>
+    <body>
+    <div id="vis">
+        <button id="play-button" onclick="animateLine()">Play</button>
+    </div>
+    <svg width="210" height="290">
+        <path></path>
+    </svg>
+    <div id="vis2">
+        <button id="play-button2" onclick="animateLineFixation()">Play</button>
+    </div>
+    <svg id="svgFix" width="210" height="290">
+        <path></path>
+    </svg>
+    </body>
 </div>
 </body>
 </html>

@@ -30,16 +30,23 @@ public class CodeExtractorController
     @RequestMapping(value = "/extract")
     public String handleCodeExtraction(@RequestParam String fileName)
     {
-        frameExtractorService.extractCodeFromVideo(fileName);
+        frameExtractorService.extractCodeFromVideo(fileName, false);
+        return "redirect:/video";
+    }
+
+    @RequestMapping(value = "/extractHocr")
+    public String handleCodeExtractionHocr(@RequestParam String fileName)
+    {
+        frameExtractorService.extractCodeFromVideo(fileName, true);
         return "redirect:/video";
     }
 
     @RequestMapping(value = "/visualize")
-    public String handleVisualization(@RequestParam String fileName, RedirectAttributes attributes)
+    public String handleVisualization(@RequestParam String fileName)
     {
         final List<Word> wordList = frameExtractorService.extractWordsFromVideo(fileName);
-        attributes.addFlashAttribute("wordList", wordList);
-        return "redirect:/home";
+     //   attributes.addFlashAttribute("wordList", wordList);
+        return "redirect:/animation";
     }
 
     @ExceptionHandler(RuntimeException.class)
