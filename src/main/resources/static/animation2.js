@@ -138,11 +138,11 @@ d3.csv("capture.csv", function (d) {
         })
         .attr('r', 5)
         .attr("fill", "red");
-})
-;
+});
 
 // This function will animate the path over and over again
 function animateLineFixation() {
+    updateData();
     // Animate the path by setting the initial offset and dasharray and then transition the offset to 0
     pathFix.attr("stroke-dasharray", lengthFix + " " + lengthFix)
         .attr("stroke-dashoffset", lengthFix)
@@ -161,5 +161,50 @@ function animateLineFixation() {
                 this.textContent = "stroke-dashoffset: " + i(t);
             };
         });
-};
+}
+
+
+function updateData() {
+
+    // Get the data again
+    d3.csv("capture_old.csv", function (d) {
+        var selector = d3.select("#svgFix")
+            .selectAll('circle')
+            .data(d);
+
+        var entering = selector.enter();
+        entering
+            .append('circle')
+            .attr('cx', function (d) {
+
+                var xScaleWord1 = xScaleWord(d.x);
+
+                return xScaleFix(xScaleWord1);
+            })
+            .attr('cy', function (d,) {
+
+                var yScaleWord1 = yScaleWord(d.y);
+
+                return yScaleFix(yScaleWord1);
+            })
+            .attr('r', 5)
+            .attr("fill", "red");
+
+        var exiting = selector.exit();
+        exiting.remove();
+
+        function getData(d) {
+            return getWordsForFrame(d); // d is a chunk
+        }
+    })
+}
+
+function getWordsForFrame(d) {
+
+    for (i = 0; i < d.length; i++) {
+        var framenumber = d[i].framenumber;
+        if (framenumber.localeCompare("598") === 0)
+            return d[i];
+    }
+}
 
