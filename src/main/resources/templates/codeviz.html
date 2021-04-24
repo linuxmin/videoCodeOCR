@@ -26,8 +26,18 @@
     <!-- This comes from here: http://fleetinbeing.net/d3e/chord.html -->
     <!-- Another example comes from here: http://exposedata.com/tutorial/chord/latest.html -->
     <style>
-        .bar {
-            fill: steelblue;
+        .arc text {
+            font: 10px sans-serif;
+            text-anchor: middle;
+        }
+
+        .arc path {
+            stroke: #fff;
+        }
+
+        .title {
+            fill: teal;
+            font-weight: bold;
         }
     </style>
     <meta charset="UTF-8">
@@ -55,12 +65,9 @@
         </div>
     </header>
     <body>
-    <svg width="1024" height="768"></svg>
+    <svg width="600" height="700"></svg>
     </body>
 </div>
 <script type="text/javascript" th:src="@{codevisualization.js}"></script>
-<script>
-    d3.select("#paragraph").style("color", "green");
-</script>
 </body>
 </html>

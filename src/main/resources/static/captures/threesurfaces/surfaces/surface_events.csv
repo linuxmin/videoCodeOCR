@@ -1,0 +1,9 @@
+world_index,world_timestamp,surface_name,event_type
+0,6656.878221999999,screen1,enter
+0,6656.878221999999,Code,enter
+0,6656.878221999999,Navigation,enter
+0,6656.878221999999,Editor,enter
+704,6787.702823999993,screen1,exit
+704,6787.702823999993,Code,exit
+704,6787.702823999993,Navigation,exit
+704,6787.702823999993,Editor,exit
