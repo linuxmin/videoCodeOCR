@@ -16,19 +16,19 @@ public class HomeController
     @GetMapping("/visualization")
     public String showVisualization()
     {
-        return "visualization";
+        return "donutslider";
     }
 
 
     @GetMapping("/codeviz")
     public String showVCodeVisualization()
     {
-        return "codeviz";
+        return "piechart";
     }
 
     @GetMapping("/animation")
     public String showAnimation()
     {
-        return "animation";
+        return "path";
     }
 }

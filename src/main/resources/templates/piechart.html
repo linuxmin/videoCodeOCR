@@ -12,6 +12,8 @@
     <!-- jQuery library -->
     <script type="text/javascript" th:src="@{jquery.min.js}"></script>
     <script type="text/javascript" th:src="@{bootstrap.bundle.js}"></script>
+
+
     <script type="text/javascript" th:src="@{d3v4.js}"></script>
 
 
@@ -24,23 +26,23 @@
     <!-- This comes from here: http://fleetinbeing.net/d3e/chord.html -->
     <!-- Another example comes from here: http://exposedata.com/tutorial/chord/latest.html -->
     <style>
-        path {
-            fill: none;
-            stroke: #999;
+        .arc text {
+            font: 10px sans-serif;
+            text-anchor: middle;
         }
 
+        .arc path {
+            stroke: #fff;
+        }
 
-        svg {
-            display: block;
-            margin-left: auto;
-            margin-right: auto
+        .title {
+            fill: teal;
+            font-weight: bold;
         }
     </style>
-
     <meta charset="UTF-8">
     <title>Test</title>
 </head>
-<body>
 <div id="wrapper">
     <header class="col-12 clear">
         <strong id="projectheader">videoOCR Source Code Extractor</strong>
@@ -61,22 +63,11 @@
                 <li class="nav-item"><a class="nav-link" th:href="@{codeviz}" href="#">Eye Gaze Duration</a></li>
             </ul>
         </div>
-        <script type="text/javascript" th:src="@{animation2.js}"></script>
     </header>
     <body>
-    <div id="vis">
-        <button id="play-button" onclick="animateLine()">Play</button>
-    </div>
-    <svg width="210" height="290">
-        <path></path>
-    </svg>
-    <div id="vis2">
-        <button id="play-button2" onclick="animateLineFixation()">Play</button>
-    </div>
-    <svg id="svgFix" width="210" height="290">
-        <path></path>
-    </svg>
+    <svg width="600" height="700"></svg>
     </body>
 </div>
+<script type="text/javascript" th:src="@{piechart.js}"></script>
 </body>
 </html>

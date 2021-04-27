@@ -12,8 +12,6 @@
     <!-- jQuery library -->
     <script type="text/javascript" th:src="@{jquery.min.js}"></script>
     <script type="text/javascript" th:src="@{bootstrap.bundle.js}"></script>
-
-
     <script type="text/javascript" th:src="@{d3v4.js}"></script>
 
 
@@ -26,23 +24,59 @@
     <!-- This comes from here: http://fleetinbeing.net/d3e/chord.html -->
     <!-- Another example comes from here: http://exposedata.com/tutorial/chord/latest.html -->
     <style>
-        .arc text {
-            font: 10px sans-serif;
-            text-anchor: middle;
+        .node {
+            cursor: pointer;
         }
 
-        .arc path {
-            stroke: #fff;
+        .link {
+            fill: none;
+            stroke: #8b8b8b;
         }
 
-        .title {
-            fill: teal;
-            font-weight: bold;
+        .ticks {
+            font: 12px sans-serif;
+            fill: black;
         }
+
+        .track,
+        .track-inset,
+        .track-overlay {
+            stroke-linecap: round;
+        }
+
+        .track {
+            stroke: #000;
+            stroke-opacity: 0.3;
+            stroke-width: 10px;
+        }
+
+        .track-inset {
+            stroke: #ddd;
+            stroke-width: 8px;
+        }
+
+        .track-overlay {
+            pointer-events: stroke;
+            stroke-width: 50px;
+            cursor: pointer;
+        }
+
+        .handle {
+            fill: #fff;
+            stroke: #000;
+            stroke-opacity: 0.5;
+            stroke-width: 1.25px;
+        }
+
+
     </style>
+
     <meta charset="UTF-8">
     <title>Test</title>
+
+
 </head>
+<body>
 <div id="wrapper">
     <header class="col-12 clear">
         <strong id="projectheader">videoOCR Source Code Extractor</strong>
@@ -64,10 +98,8 @@
             </ul>
         </div>
     </header>
-    <body>
-    <svg width="600" height="700"></svg>
-    </body>
+    <svg width="960" height="500"></svg>
+    <script type="text/javascript" th:src="@{animation.js}"></script>
 </div>
-<script type="text/javascript" th:src="@{codevisualization.js}"></script>
 </body>
 </html>

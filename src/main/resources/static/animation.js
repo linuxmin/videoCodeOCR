@@ -1,104 +1,209 @@
-var url = 'https://gist.githubusercontent.com/d3byex/5a8267f90a0d215fcb3e/raw/2d30d7b9b85220395727311dcb94345ef64ca10c/multi_network.html';
-d3.json(url, function (error, data) {
-    var width = 960, height = 500;
-    var svg = d3.select('body')
-        .append('svg')
-        .attr({
-            width: width,
-            height: height
-        });
-
-    var force = d3.layout.force()
-        .size([width, height])
-        .linkDistance(1)
-        .charge(-4000)
-        .nodes(data.nodes)
-        .links(data.edges)
-        .start();
-
-    var linkTypes = d3.set(data.edges.map(function (d) {
-        return d.type;
-    })).values();
-
-    svg.append("defs")
-        .selectAll("marker")
-        .data(linkTypes)
-        .enter()
-        .append("marker")
-        .attr({
-            id: function (d) { return d; },
-            viewBox: "0 -5 10 10",
-            refX: 20,
-            refY: -1.5,
-            markerWidth: 6,
-            markerHeight: 6,
-            orient: "auto"
-        })
-        .append("path")
-        .attr("d", "M0,-5L10,0L0,5");
+var svg = d3.select('svg'),
+    width = +svg.attr("width"),
+    height = +svg.attr("height"),
+    color = d3.scaleOrdinal(d3.schemeCategory10);
 
 
+/////// SLIDER ///////
+var L = 10;
+var slider_size = 0.75*width;
+var left_margin = 0.5*(width - slider_size);
 
-    var edges = svg.append("g")
-        .selectAll("path")
-        .data(force.links())
-        .enter()
-        .append("path")
-        .attr("class", function (d) {
-            return "link " + d.type;
-        })
-        .attr("marker-end", function(d) {
-            return "url(#" + d.type + ")";
-        });
+var x = d3.scaleLinear()
+    .domain([0,10])
+    .range([left_margin, slider_size + left_margin])
+    .clamp(true);
 
-    var nodes = svg.append('g')
-        .selectAll('g')
-        .data(force.nodes())
-        .enter()
-        .append('g')
-        .call(force.drag);
+var slider = svg.append("g")
+    .attr("transform", "translate(15,"+(height-50)+")");
 
-    var colors = d3.scale.category20();
-    nodes.append('circle')
-        .attr({
-            r: 10,
-            fill: function (d, i) {
-                return colors(i);
-            },
-            stroke: 'black',
-            'stroke-width': 0
-        })
-        .call(force.drag()
-            .on("dragstart", function (d) {
-                d.fixed = true;
-                d3.select(this).attr('stroke-width', 3);
-            }))
-        .on('dblclick', function (d) {
-            d.fixed = false;
-            d3.select(this).attr('stroke-width', 0);
-        });
+slider.append("line")
+    .attr("class", "track")
+    .attr("x1", x.range()[0])
+    .attr("x2", x.range()[1])
+    .select(function() { return this.parentNode.appendChild(this.cloneNode(true)); })
+    .attr("class", "track-inset")
+    .select(function() { return this.parentNode.appendChild(this.cloneNode(true)); })
+    .attr("class", "track-overlay")
+    .call(d3.drag()
+        .on("start.interrupt", function() { slider.interrupt(); })
+        .on("start drag", function() { return hue(x.invert(d3.event.x)); }));
 
-    nodes.append('text')
-        .attr({
-            dx: 12,
-            dy: '.35em',
-            'pointer-events': 'none'
-        })
-        .style('font', '10px sans-serif')
-        .text(function (d) { return d.name });
+var years = d3.range(2010,2016,1)
+var dx = L/(years.length-1)
+var xticks = d3.range(0,L+dx,dx)
 
-    force.on("tick", function () {
-        edges.attr("d", function (d) {
-            var dx = d.target.x - d.source.x,
-                dy = d.target.y - d.source.y,
-                dr = Math.sqrt(dx * dx + dy * dy);
-            return "M" + d.source.x + "," + d.source.y + "A" +
-                dr + "," + dr + " 0 0,1 " +
-                d.target.x + "," + d.target.y;
-        });
-        nodes.attr("transform", function (d) {
-            return "translate(" + d.x + "," + d.y + ")";
-        });
+slider.insert("g", ".track-overlay")
+    .attr("class", "ticks")
+    .attr("transform", "translate(0," + 25 + ")")
+    .selectAll("text")
+    .data(xticks)
+    .enter().append("text")
+    .attr("x", x)
+    .attr("text-anchor", "middle")
+    .text(function(d,i) { return years[i]; });
+
+var handle = slider.insert("circle", ".track-overlay")
+    .attr("class", "handle")
+    .attr("r", 9)
+    .attr("cx", x.range()[0]); //initial position to zero
+
+function hue(h) {
+    handle.attr("cx", x(h));
+}
+
+function dragstarted(d) {
+    if (!d3.event.active) simulation.alphaTarget(0).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+}
+
+function dragged(d) {
+    d.fx = d3.event.x;
+    d.fy = d3.event.y;
+}
+
+function dragended(d) {
+    if (!d3.event.active) simulation.alphaTarget(0);
+    d.fx = null;
+    d.fy = null;
+}
+
+
+/////// GRAPH ////////
+d3.json("graph.json", function(error, graph) {
+    if (error) throw error;
+
+    //user-defined parameters
+    var maxDistance = 300, //max distance between two nodes
+        minDistance = 10, //min distance betwween two nodes
+        maxRadius = 30, //max radius of circle
+        minRadius = 8, //min radius of circle
+        minLinkwidth = 0, //min width of link
+        maxLinkwidth = 6 //max width of link
+
+    var [maxConnect, maxFraction] = getnetworkProp(graph);
+
+    var nodes = graph.nodes,
+        nodeById = d3.map(nodes, function(d) { return d.id; }),
+        links = graph.links,
+        value = links.map(function(d){return d.value}),
+
+        l = []
+    links.forEach(function(link) {
+        var s = nodeById.get(link.source),
+            t = nodeById.get(link.target),
+            v = link.value,
+            y = link.year;
+
+        l.push({source: s, target: t, year: y, value:v});
     });
 
-});
+    links = l
+
+    simulation = d3.forceSimulation(nodes)
+
+    simulation.force("charge", d3.forceManyBody())
+        .force("link", d3.forceLink(links))
+        .on("tick", ticked);
+
+    var g = svg.append("g").attr("transform", "translate(" + width / 2 + "," + 0.45 * height + ")"),
+        link = g.append("g").attr("stroke", "#000").attr("stroke-width", 1.5).selectAll(".link"),
+        node = g.append("g").attr("stroke", "#fff").attr("stroke-width", 1.5).selectAll(".node");
+
+    restart();
+
+    d3.interval(function() {
+        restart();
+    },150)
+
+
+    function restart() {
+
+        var current_year = years[Math.round(x.invert(jQuery(".handle").attr("cx"))/dx)];
+        //get "radius" of each node for current_year
+        var fraction = graph.nodes.map(function(d) {return d.fraction}).map(function(d) {return d[current_year.toString()];})
+
+        // Apply the general update pattern to the nodes.
+        node = node.data(nodes, function(d) { return d.id;});
+        node.exit().remove();
+        node = node.enter().append("circle")
+            .attr("class","node")
+            .attr("fill", function(d) { return color(d.id); })
+            .merge(node)
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended));
+
+        node.append("title")
+            .text(function(d) { return d.id; });
+
+        //apply transition to radii of nodes
+        node.transition()
+            .duration(50)
+            .attr("r",function(d) {return Math.max(minRadius,d.fraction[current_year.toString()]/maxFraction * maxRadius);})
+
+        // Apply the general update pattern to the links
+        links_filtered = links.filter(function(d) {return d.year==current_year;});
+        link = link.data(links_filtered, function(d) { return d.source.id + "-" + d.target.id; });
+        link.exit().remove();
+        link = link.enter()
+            .append("line")
+            .attr("class", "link")
+            .merge(link);
+
+        //define transition to width of edges
+        link.transition()
+            .duration(50)
+            .attr("stroke-width", function(d,i) { return  Math.max(minLinkwidth,d.value/maxConnect * maxLinkwidth);})
+
+
+        // Update and restart the simulation.
+        simulation.nodes(nodes);
+        simulation.force("link").links(links)
+        simulation.force("link", d3.forceLink(links)
+            .distance(function(d) {
+                if(d.year==current_year){
+                    return Math.min(maxConnect/d.value * minDistance,maxDistance);
+                }
+                else{
+                    return maxDistance;
+                }})
+        )
+
+        simulation.alpha(0.4).restart();
+    }
+
+    //this function defines position of nodes and links
+    //at each "simulation time step"
+    function ticked() {
+        node.attr("cx", function(d) { return d.x; })
+            .attr("cy", function(d) { return d.y; })
+
+        link.attr("x1", function(d) { return d.source.x; })
+            .attr("y1", function(d) { return d.source.y; })
+            .attr("x2", function(d) { return d.target.x; })
+            .attr("y2", function(d) { return d.target.y; });
+    }
+
+
+})
+
+//this function calculates properties of network
+//(i.e., max connection between nodes, max fraction value of node)
+function getnetworkProp(graph){
+    //1) max connection between nodes
+    var maxConnect = Math.max.apply(Math,graph.links.map(function(d) {return d.value;}));   //max connection between nodes
+
+    //2) max fraction value (used to draw nodes radii)
+    var maxFraction = 0;
+    var arr, obj, maxf;
+    for (i=0;i<graph.nodes.length;i++){
+        obj = graph.nodes[i].fraction
+        arr = Object.keys( obj ).map(function (key) { return obj[key]; });
+        maxf = Math.max.apply( null, arr );
+        maxFraction = Math.max(maxFraction,maxf);
+    }
+    return [maxConnect, maxFraction];
+}
