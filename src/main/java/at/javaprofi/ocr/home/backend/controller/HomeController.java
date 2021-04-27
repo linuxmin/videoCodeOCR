@@ -16,7 +16,7 @@ public class HomeController
     @GetMapping("/visualization")
     public String showVisualization()
     {
-        return "donutslider";
+        return "graphslider";
     }
 
 
