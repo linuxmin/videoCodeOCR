@@ -8,7 +8,13 @@
 /extracted-dir
 /filestorage-dir
 /exported-dir
+/src/main/resources/static/examples
+/src/main/resources/static/examples/captures
 *.hocr
+*.csv
+*.mp4
+
+*.m4v
 # BlueJ files
 *.ctxt
 
