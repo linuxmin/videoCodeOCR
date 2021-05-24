@@ -299,7 +299,7 @@ public class ParsingServiceImpl implements ParsingService
         }
 
         totalDurationMethodList.sort(Comparator.comparingLong(MethodContainer::getDuration));
-        return matchedMethodList;
+        return totalDurationMethodList;
     }
 
     private List<MethodContainer> calculateMatchingSourceMethodsOfClassCandidates(
