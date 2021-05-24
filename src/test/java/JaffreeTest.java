@@ -1,5 +1,6 @@
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
 
@@ -28,7 +29,7 @@ public class JaffreeTest
                 .fromPath(pathToSrc)
             )
             .addOutput(FrameOutput
-                .withConsumer(new VideoFrameConsumer(pathToDstDir))
+                .withConsumer(new VideoFrameConsumer(pathToDstDir, new AtomicLong()))
                 // No more then 100 frames
                 .setFrameCount(StreamType.VIDEO, 100L)
                 // 20 frame every quarter second

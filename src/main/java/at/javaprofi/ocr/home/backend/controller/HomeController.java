@@ -3,6 +3,9 @@ package at.javaprofi.ocr.home.backend.controller;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
+/**
+ * controller used for navigation requests
+ */
 @Controller
 public class HomeController
 {
@@ -19,7 +22,6 @@ public class HomeController
         return "graphslider";
     }
 
-
     @GetMapping("/codeviz")
     public String showVCodeVisualization()
     {
@@ -30,5 +32,11 @@ public class HomeController
     public String showAnimation()
     {
         return "path";
+    }
+
+    @GetMapping("/testviz")
+    public String showResults()
+    {
+        return "testviz";
     }
 }

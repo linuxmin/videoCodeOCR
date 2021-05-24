@@ -1,5 +1,7 @@
-package at.javaprofi.ocr.filestorage.backend.service;
+package at.javaprofi.ocr.io.backend.service;
 
+import java.awt.*;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -8,52 +10,39 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Stream;
 
 import org.apache.commons.io.FilenameUtils;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
-import org.springframework.util.FileSystemUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import at.javaprofi.ocr.filestorage.api.StorageProperties;
-import at.javaprofi.ocr.filestorage.api.dao.PathContainer;
-import at.javaprofi.ocr.filestorage.api.service.FileStorageService;
+import at.javaprofi.ocr.frame.api.word.MethodContainer;
+import at.javaprofi.ocr.io.api.StorageProperties;
+import at.javaprofi.ocr.io.api.dao.PathContainer;
+import at.javaprofi.ocr.io.api.service.FileService;
 
 @Service
-public class FileStorageServiceImpl implements FileStorageService
+public class FileServiceImpl implements FileService
 {
 
-    private static final Logger LOG = LoggerFactory.getLogger(FileStorageServiceImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FileServiceImpl.class);
 
     private final Path videoLocation;
     private final Path frameLocation;
 
     @Autowired
-    public FileStorageServiceImpl(StorageProperties properties)
+    public FileServiceImpl(StorageProperties properties)
     {
         this.videoLocation = Paths.get(properties.getVideoLocation());
         this.frameLocation = Paths.get(properties.getFrameLocation());
-    }
-
-    @Override
-    public void writeHocrToXML(String hocrString, Path hocrPath, Path framePath)
-    {
-        try
-        {
-            final Path xmlFilePath = hocrPath.resolve(FilenameUtils.removeExtension(framePath.getFileName().toString()) + ".xml");
-            Files.write(xmlFilePath, Collections.singleton(hocrString));
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
@@ -81,7 +70,7 @@ public class FileStorageServiceImpl implements FileStorageService
             if (!destinationFile.getParent().equals(this.videoLocation.toAbsolutePath()))
             {
                 throw new RuntimeException(
-                    originalFilename + "Uploading file outside filestorage directory not allowed!");
+                    originalFilename + "Uploading file outside io directory not allowed!");
             }
             try (InputStream inputStream = file.getInputStream())
             {
@@ -96,26 +85,6 @@ public class FileStorageServiceImpl implements FileStorageService
         }
 
         LOG.info("uploading {} successful", file.getOriginalFilename());
-    }
-
-    @Override
-    public Stream<Path> loadFrames()
-    {
-        try
-        {
-            LOG.debug("Loading frames from {}", frameLocation);
-
-            return Files.walk(this.frameLocation, 1)
-                .filter(path -> !path.equals(frameLocation))
-                .map(frameLocation::relativize)
-                .sorted(Comparator.comparingLong(this::getLastModified));
-        }
-
-        catch (IOException e)
-        {
-            LOG.error("Error loading frames from: {}", frameLocation);
-            throw new RuntimeException("Failed to read stored frames! ", e);
-        }
     }
 
     private long getLastModified(Path path)
@@ -162,13 +131,6 @@ public class FileStorageServiceImpl implements FileStorageService
     }
 
     @Override
-    public void deleteAll()
-    {
-        LOG.info("Deleting all files... ");
-        FileSystemUtils.deleteRecursively(videoLocation.toFile());
-    }
-
-    @Override
     public void init()
     {
         try
@@ -186,6 +148,8 @@ public class FileStorageServiceImpl implements FileStorageService
     public Stream<Path> retrieveContainingFilesAsPathStream(Path pathToTraverse)
     {
         {
+
+            LOG.info("retrieving frame file list from path:  {}", pathToTraverse);
             try
             {
                 return Files.walk(pathToTraverse, 1)
@@ -202,24 +166,79 @@ public class FileStorageServiceImpl implements FileStorageService
     @Override
     public PathContainer createDirectoriesAndRetrievePathContainerFromVideoFileName(String fileName)
     {
+        LOG.info("retrieving and creating directories if not exist for file: {}", fileName);
+
         final Path videoFileName = Paths.get(fileName).getFileName();
         final Path videoPath = videoLocation.resolve(videoFileName);
         final Path framePath = frameLocation.resolve(FilenameUtils.removeExtension(videoFileName.toString()));
-        final Path hocrPath = framePath.resolve("hocr");
+        final Path jsonPath = framePath.resolve("json");
+        final Path extractedLinesPath = Paths.get(jsonPath.toString(), "extracted_lines.json");
+        final Path methodMatchesPath = Paths.get(jsonPath.toString(), "method_matches.json");
+        final Path totalDurationPath = Paths.get(jsonPath.toString(), "total_duration.json");
 
         try
         {
-            Files.createDirectories(framePath.toAbsolutePath());
-            Files.createDirectories(hocrPath);
+            if (Files.notExists(framePath.toAbsolutePath()))
+            {
+                Files.createDirectories(framePath.toAbsolutePath());
+
+            }
+            if (Files.notExists(jsonPath))
+            {
+                Files.createDirectories(jsonPath);
+            }
         }
         catch (IOException e)
         {
-            throw new RuntimeException("Exception while creating frame/hocr directories", e);
+            throw new RuntimeException("Exception while creating frame/json directories", e);
         }
 
         return new PathContainer.PathContainerBuilder().videoPath(videoPath)
             .framesPath(framePath)
-            .hocrPath(hocrPath).build();
+            .jsonPath(jsonPath)
+            .extractedLinesPath(extractedLinesPath)
+            .methodMatchesPath(methodMatchesPath)
+            .totalDurationPath(totalDurationPath)
+            .build();
     }
 
+    @Override
+    public void writeMethodContainerListToJSON(Path jsonPath, List<MethodContainer> matchedMethodList,
+        String[] header)
+    {
+
+        try (FileWriter file = new FileWriter(jsonPath.toFile()))
+        {
+            final JSONArray jsonMethodContainerList = new JSONArray();
+
+            matchedMethodList.forEach(methodContainer -> {
+
+                final JSONObject jsonMethodContainer = new JSONObject();
+                jsonMethodContainer.put("duration", methodContainer.getDuration());
+
+                jsonMethodContainer.put("className", methodContainer.getClassName());
+                jsonMethodContainer.put("methodName", methodContainer.getMethodName());
+
+                final Rectangle boundingBox = methodContainer.getBoundingBox();
+
+                if (boundingBox != null)
+                {
+                    jsonMethodContainer.put("x", boundingBox.x);
+                    jsonMethodContainer.put("y", boundingBox.y);
+                    jsonMethodContainer.put("width", boundingBox.width);
+                    jsonMethodContainer.put("height", boundingBox.height);
+                }
+
+                jsonMethodContainerList.add(jsonMethodContainer);
+
+            });
+            file.write(jsonMethodContainerList.toJSONString());
+            file.flush();
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException("writing extracted lines to json failed", e);
+        }
+
+    }
 }

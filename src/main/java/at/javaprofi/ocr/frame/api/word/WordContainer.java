@@ -4,19 +4,24 @@ import java.util.List;
 
 import net.sourceforge.tess4j.Word;
 
+/**
+ * POJO container with fields to be written to a JSON file,
+ * containing the result of the tesseract OCR processing
+ */
 public class WordContainer
 {
-    private long frameNumber;
+    private long duration;
+
     private List<Word> wordList;
 
-    public long getFrameNumber()
+    public long getDuration()
     {
-        return frameNumber;
+        return duration;
     }
 
-    public void setFrameNumber(long frameNumber)
+    public void setDuration(long duration)
     {
-        this.frameNumber = frameNumber;
+        this.duration = duration;
     }
 
     public List<Word> getWordList()

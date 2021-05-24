@@ -5,14 +5,14 @@ import java.nio.file.Paths;
 
 import org.junit.Test;
 
-import at.javaprofi.ocr.filestorage.api.StorageProperties;
-import at.javaprofi.ocr.filestorage.backend.service.FileStorageServiceImpl;
 import at.javaprofi.ocr.frame.backend.service.FrameExtractorServiceImpl;
+import at.javaprofi.ocr.io.api.StorageProperties;
+import at.javaprofi.ocr.io.backend.service.FileServiceImpl;
 
 public class PathTest
 {
 
-    public static final String UPLOAD_DIR = "filestorage-dir";
+    public static final String UPLOAD_DIR = "io-dir";
     public static final String EXTRACTED_DIR = "extracted-dir";
 
     @Test
@@ -22,8 +22,8 @@ public class PathTest
         /*
         Paths.get retrieves a path from given strings or URI within the root directory the application is running
         example with application started from IDE with project root /Users/brian/OCR
-        Path uploadDir = Paths.get("filestorage-dir")
-        uploadDir.toString() evaluates to "/Users/brian/OCR/filestorage-dir"
+        Path uploadDir = Paths.get("io-dir")
+        uploadDir.toString() evaluates to "/Users/brian/OCR/io-dir"
          */
         final Path uploadDir = Paths.get(UPLOAD_DIR);
         final Path extractedDir = Paths.get(EXTRACTED_DIR);
@@ -32,8 +32,8 @@ public class PathTest
         assertEquals(EXTRACTED_DIR, extractedDir.toString());
 
         FrameExtractorServiceImpl frameExtractorService =
-            new FrameExtractorServiceImpl(new FileStorageServiceImpl(new StorageProperties()));
-        frameExtractorService.extractCodeFromVideo("file", true);
+            new FrameExtractorServiceImpl(new FileServiceImpl(new StorageProperties()));
+        //     frameExtractorService.extractCodeFromVideo("file");
 
         /*
         if Paths.get(String names...) is called with an empty string, then the resulting absolute path is the running path

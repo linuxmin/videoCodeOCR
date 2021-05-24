@@ -4,6 +4,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.imageio.ImageIO;
 
@@ -13,15 +14,20 @@ import com.github.kokorin.jaffree.ffmpeg.Stream;
 
 import net.sourceforge.tess4j.util.ImageHelper;
 
+/**
+ * custom implementation of FrameConsumer
+ * used by FFMpeg instance to scale and write its consumed frames to *.jpeg files
+ */
 public class VideoFrameConsumer implements FrameConsumer
 {
 
-    private long num = 1;
     private final Path pathToDstDir;
+    private final AtomicLong duration;
 
-    public VideoFrameConsumer(Path pathToDstDir)
+    public VideoFrameConsumer(Path pathToDstDir, AtomicLong duration)
     {
         this.pathToDstDir = pathToDstDir;
+        this.duration = duration;
     }
 
     @Override
@@ -40,12 +46,14 @@ public class VideoFrameConsumer implements FrameConsumer
         }
 
         final BufferedImage invertedColor = ImageHelper.invertImageColor(frame.getImage());
-        String filename = "frame_" + num++ + ".jpg";
+        final BufferedImage subImage = ImageHelper.getSubImage(invertedColor, 323, 90, 915, 744);
+        String filename = duration.get()
+            + ".jpg";
         Path output = pathToDstDir.resolve(filename);
 
         try
         {
-            ImageIO.write(invertedColor, "jpg", output.toFile());
+            ImageIO.write(subImage, "jpg", output.toFile());
         }
         catch (IOException e)
         {

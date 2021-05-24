@@ -20,7 +20,7 @@ var label = d3.arc()
     .outerRadius(radius)
     .innerRadius(radius - 80);
 
-d3.csv("captures/threesurfaces/surfaces/normal_surface_gaze_distribution.csv", function (error, data) {
+d3.csv("examples/captures/threesurfaces/surfaces/normal_surface_gaze_distribution.csv", function (error, data) {
     if (error) {
         throw error;
     }

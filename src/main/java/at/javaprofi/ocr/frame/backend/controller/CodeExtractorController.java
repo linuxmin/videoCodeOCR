@@ -1,7 +1,5 @@
 package at.javaprofi.ocr.frame.backend.controller;
 
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,41 +10,56 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import at.javaprofi.ocr.frame.api.service.FrameExtractorService;
-import net.sourceforge.tess4j.Word;
+import at.javaprofi.ocr.parsing.api.service.ParsingService;
+import at.javaprofi.ocr.recognition.api.service.RecognitionService;
 
+/**
+ * main controller, handling and forwarding API requests to the proper services
+ */
 @Controller
 public class CodeExtractorController
 {
     private static final Logger LOG = LoggerFactory.getLogger(CodeExtractorController.class);
 
     private final FrameExtractorService frameExtractorService;
+    private final ParsingService parsingService;
+    private final RecognitionService recognitionService;
 
     @Autowired
-    public CodeExtractorController(FrameExtractorService frameExtractorService)
+    public CodeExtractorController(FrameExtractorService frameExtractorService,
+        ParsingService parsingService, RecognitionService recognitionService)
     {
         this.frameExtractorService = frameExtractorService;
+        this.parsingService = parsingService;
+        this.recognitionService = recognitionService;
     }
 
-    @RequestMapping(value = "/extract")
-    public String handleCodeExtraction(@RequestParam String fileName)
+    @RequestMapping(value = "/frame")
+    public String handleFrameExtraction(@RequestParam String fileName)
     {
-        frameExtractorService.extractCodeFromVideo(fileName, false);
-        return "redirect:/video";
+        frameExtractorService.extractFrames(fileName);
+        return "redirect:/upload";
     }
 
-    @RequestMapping(value = "/extractHocr")
-    public String handleCodeExtractionHocr(@RequestParam String fileName)
+    @RequestMapping(value = "/ocr")
+    public String handlePerformOCR(@RequestParam String fileName)
     {
-        frameExtractorService.extractCodeFromVideo(fileName, true);
+        recognitionService.extractTextFromFramesToJSON(fileName);
         return "redirect:/video";
     }
 
     @RequestMapping(value = "/visualize")
     public String handleVisualization(@RequestParam String fileName)
     {
-        final List<Word> wordList = frameExtractorService.extractWordsFromVideo(fileName);
-     //   attributes.addFlashAttribute("wordList", wordList);
-        return "redirect:/animation";
+        recognitionService.extractTextFromFramesToJSON(fileName);
+        return "redirect:/video";
+    }
+
+    @RequestMapping(value = "/classMethodJSON")
+    public String handleCreateClassMethodJSON(@RequestParam String fileName)
+    {
+        parsingService.parsingOriginalSourceCodeAndWriteCalculatedMatchingLinesToJSONFiles(fileName);
+        return "redirect:/video";
     }
 
     @ExceptionHandler(RuntimeException.class)

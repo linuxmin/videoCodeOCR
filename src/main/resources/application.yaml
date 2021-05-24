@@ -8,6 +8,6 @@ spring:
       on-profile: dev
 logging:
   level:
-    at.javaprofi.ocr.frame.backend.service: debug
+    at.javaprofi.ocr.recognition.backend.service: info
 server:
   port: 8083

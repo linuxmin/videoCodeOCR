@@ -74,7 +74,7 @@ var label = slider.append("text")
 ////////// plot //////////
 
 var dataset;
-
+2
 var plot = svg.append("g")
     .attr("class", "plot")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
