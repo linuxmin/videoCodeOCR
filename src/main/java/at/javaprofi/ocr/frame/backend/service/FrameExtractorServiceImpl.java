@@ -97,11 +97,11 @@ public class FrameExtractorServiceImpl implements FrameExtractorService
             })
             .addOutput(FrameOutput
                 .withConsumer(new VideoFrameConsumer(framesPath, frameCount))
-                .setFrameRate(1)
-                .setFrameCount(StreamType.VIDEO,70L)
+                .setFrameRate(60)
                 .disableStream(StreamType.AUDIO)
                 .disableStream(StreamType.SUBTITLE)
-                .disableStream(StreamType.DATA)).addArguments("-threads", "32")
+                .disableStream(StreamType.DATA))
+            .addArguments("-threads", "32")
             .executeAsync();
     }
 }
