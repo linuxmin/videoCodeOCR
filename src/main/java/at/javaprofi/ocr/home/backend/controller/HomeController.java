@@ -31,7 +31,7 @@ public class HomeController
     @GetMapping("/animation")
     public String showAnimation()
     {
-        return "path";
+        return "visualization";
     }
 
     @GetMapping("/testviz")

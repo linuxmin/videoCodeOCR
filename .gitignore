@@ -10,6 +10,7 @@
 /exported-dir
 /src/main/resources/static/examples
 /src/main/resources/static/examples/captures
+*_backup*
 *.hocr
 *.csv
 *.mp4
