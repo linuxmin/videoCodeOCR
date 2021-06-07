@@ -181,7 +181,7 @@ public class ParsingServiceImpl implements ParsingService
 
                     classMethodMap.putIfAbsent(n.getFullyQualifiedName().orElse("dududu"), n.getMethods()
                         .stream()
-                        .map(method -> method.getDeclarationAsString(true, true, true))
+                        .map(methodDeclaration -> methodDeclaration.getDeclarationAsString(true, true, true))
                         .collect(
                             Collectors.toList()));
 
@@ -324,23 +324,21 @@ public class ParsingServiceImpl implements ParsingService
                         final List<String> lineWordsWithoutLineNumber = Arrays.stream(lineWords)
                             .filter(string -> !StringUtils.isNumericSpace(string)).collect(Collectors.toList());
                         final String extractedLineWithoutLineNumber = String.join(" ", lineWordsWithoutLineNumber);
-                        final int posBlockOpen = StringUtils.lastIndexOf(extractedLineWithoutLineNumber, "{");
 
-                        if (StringUtils.containsIgnoreCase(extractedLineWithoutLineNumber, sourceCodeMethodName))
+                        final String sourceCodeMethodShort = StringUtils.substringBefore(sourceCodeMethodName, "(");
+                        final String possibleMethodName =
+                            StringUtils.substringBefore(extractedLineWithoutLineNumber, "(");
+                        if (StringUtils.containsIgnoreCase(possibleMethodName, sourceCodeMethodShort))
                         {
-                            final String extractedPossibleMethodName =
-                                StringUtils.substringBeforeLast(extractedLineWithoutLineNumber, "{");
-
                             final JaccardSimilarity jaccardSimilarity = new JaccardSimilarity();
                             final Double calculatedJaccardSimilarity =
-                                jaccardSimilarity.apply(sourceCodeMethodName, extractedPossibleMethodName);
+                                jaccardSimilarity.apply(sourceCodeMethodShort, possibleMethodName);
 
                             if (calculatedJaccardSimilarity != null && calculatedJaccardSimilarity > 0.96)
                             {
-
                                 final JaroWinklerSimilarity jaroWinklerSimilarity = new JaroWinklerSimilarity();
                                 final Double calculatedJaroWinklerSimilarity =
-                                    jaroWinklerSimilarity.apply(sourceCodeMethodName, extractedPossibleMethodName);
+                                    jaroWinklerSimilarity.apply(sourceCodeMethodShort, possibleMethodName);
 
                                 if (calculatedJaroWinklerSimilarity != null && calculatedJaroWinklerSimilarity > 0.95)
                                 {
