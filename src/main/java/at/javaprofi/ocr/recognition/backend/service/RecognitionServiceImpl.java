@@ -116,6 +116,9 @@ public class RecognitionServiceImpl implements RecognitionService
             file.write(extractedJSON.toJSONString());
             file.flush();
 
+            LOG.info("finished writing json file: {}", jsonPath);
+
+
         }
         catch (IOException e)
         {

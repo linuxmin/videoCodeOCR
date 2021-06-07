@@ -3,6 +3,7 @@ package at.javaprofi.ocr.parsing.backend.service;
 import java.awt.*;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -177,7 +179,7 @@ public class ParsingServiceImpl implements ParsingService
                 {
                     final Map<String, List<String>> classMethodMap = new HashMap<>();
 
-                    classMethodMap.putIfAbsent(n.getNameAsString(), n.getMethods()
+                    classMethodMap.putIfAbsent(n.getFullyQualifiedName().orElse("dududu"), n.getMethods()
                         .stream()
                         .map(method -> method.getDeclarationAsString(true, true, true))
                         .collect(
@@ -227,7 +229,7 @@ public class ParsingServiceImpl implements ParsingService
                     final String extractedLine = extractedMethodContainer.getExtractedLine();
 
                     if (StringUtils.containsIgnoreCase(extractedLine, "class")
-                        && StringUtils.containsIgnoreCase(extractedLine, className))
+                        || StringUtils.containsIgnoreCase(extractedLine, className))
                     {
                         matchedClassesMethodMap.putIfAbsent(className, parsedMethodNamesPerClass.get(className));
                     }
@@ -325,7 +327,7 @@ public class ParsingServiceImpl implements ParsingService
                             .filter(string -> !StringUtils.isNumericSpace(string)).collect(Collectors.toList());
                         final String extractedLineWithoutLineNumber = String.join(" ", lineWordsWithoutLineNumber);
                         final int posBlockOpen = StringUtils.lastIndexOf(extractedLineWithoutLineNumber, "{");
-                        if (posBlockOpen != -1)
+                        if (posBlockOpen != -1 || StringUtils.containsIgnoreCase(extractedLineWithoutLineNumber,sourceCodeMethodName))
                         {
                             final String extractedPossibleMethodName =
                                 StringUtils.substringBeforeLast(extractedLineWithoutLineNumber, "{");
@@ -360,4 +362,45 @@ public class ParsingServiceImpl implements ParsingService
         return matchedMethodList;
     }
 
+    private List<String> readFromJson()
+    {
+        final String userRunDir = System.getProperties().getProperty("user.dir");
+        final String pathToWrite = userRunDir + "/src/test/resources/";
+        JSONParser jsonParser = new JSONParser();
+        final List<String> visitedJavaClasses = new ArrayList<>();
+
+        try (Stream<Path> pathsOfFiles = Files.walk(Paths.get(pathToWrite), 1))
+        {
+            pathsOfFiles.forEach(path -> {
+                if(!Files.isDirectory(path)){
+                    try (FileReader fileReader = new FileReader(path.toFile()))
+                    {
+                        final JSONObject jsonObject = (JSONObject) jsonParser.parse(fileReader);
+                        final String fullFileName = (String) jsonObject.get("fileName");
+                        System.out.println(fullFileName);
+                        final String fileName = StringUtils.substringAfterLast(fullFileName,"\\");
+                        if(StringUtils.containsIgnoreCase(fullFileName,".java"))
+                        {
+                            final String javaClassFile = StringUtils.substringBefore(fileName, ".java");
+                            visitedJavaClasses.add(javaClassFile);
+                        }
+                    }
+
+
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
+
+
+            });
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
+        return visitedJavaClasses;
+    }
 }

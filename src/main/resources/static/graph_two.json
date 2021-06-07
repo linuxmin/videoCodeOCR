@@ -4,12 +4,11 @@
     {"id": "Daten.java","fraction":{"0":0.5,"40":0.2,"80":0.2,"120":0.02,"160":0.02}},
     {"id": "Mann.java","fraction":{"0":0.1,"40":0.3,"80":0.5,"120":0.5,"160":0.02}}
   ],
-  "links": [
-    {"source": "Andere.java", "target": "Daten.java", "value": 30, "second":0},
-    {"source": "Mann.java", "target": "Mann.java", "value": 30, "second":40},
-    {"source":  "Andere.java", "target": "Mann.java", "value": 30,"second":80},
-    {"source":  "Mann.java", "target": "Daten.java", "value": 30,"second":120},
-    {"source":  "Daten.java", "target": "Andere.java", "value": 30,"second":160}
+  "edges": [
+    {"source": "Andere.java", "target": "Daten.java", "weight": 2, "second":0},
+    {"source":  "Andere.java", "target": "Mann.java", "weight": 2,"second":80},
+    {"source":  "Mann.java", "target": "Daten.java", "weight": 2,"second":120},
+    {"source":  "Daten.java", "target": "Andere.java", "weight": 2,"second":160}
 
   ]
 }

@@ -13,6 +13,7 @@
     <script type="text/javascript" th:src="@{jquery.min.js}"></script>
     <script type="text/javascript" th:src="@{bootstrap.bundle.js}"></script>
     <script type="text/javascript" th:src="@{d3v4.js}"></script>
+    <script src="https://d3js.org/queue.v1.min.js" type="text/javascript"></script>
 
 
     <!-- Latest compiled JavaScript -->
@@ -24,50 +25,18 @@
     <!-- This comes from here: http://fleetinbeing.net/d3e/chord.html -->
     <!-- Another example comes from here: http://exposedata.com/tutorial/chord/latest.html -->
     <style>
-        .node {
-            cursor: pointer;
+        svg {
+            height: 500px;
+            width: 500px;
+            border: 1px solid gray;
         }
-
         .link {
-            fill: none;
-            stroke: #8b8b8b;
+            stroke: #93C464;
         }
 
-        .ticks {
-            font: 12px sans-serif;
-            fill: black;
+        marker {
+            fill: #93C464;
         }
-
-        .track,
-        .track-inset,
-        .track-overlay {
-            stroke-linecap: round;
-        }
-
-        .track {
-            stroke: #000;
-            stroke-opacity: 0.3;
-            stroke-width: 10px;
-        }
-
-        .track-inset {
-            stroke: #ddd;
-            stroke-width: 8px;
-        }
-
-        .track-overlay {
-            pointer-events: stroke;
-            stroke-width: 50px;
-            cursor: pointer;
-        }
-
-        .handle {
-            fill: #fff;
-            stroke: #000;
-            stroke-opacity: 0.5;
-            stroke-width: 1.25px;
-        }
-
 
     </style>
 
@@ -98,7 +67,10 @@
             </ul>
         </div>
     </header>
-    <svg width="960" height="500"></svg>
+    <div id="viz">
+        <svg>
+        </svg>
+    </div>
     <script type="text/javascript" th:src="@{graphslider.js}"></script>
 </div>
 </body>

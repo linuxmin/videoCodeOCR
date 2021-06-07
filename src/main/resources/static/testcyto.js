@@ -60,7 +60,7 @@ var cy = cytoscape({
         edges: [{
             data: {
                 id: 'a"e',
-                weight: 1,
+                weight: 100,
                 source: 'a',
                 target: 'e'
             }
@@ -124,18 +124,17 @@ var cy = cytoscape({
     }
 });
 
-var bfs = cy.elements().bfs('#a', function() {}, true);
-
-var i = 0;
-var highlightNextEle = function() {
-    if (i < bfs.path.length) {
-        bfs.path[i].addClass('highlighted');
-
-
-        i++;
-        setTimeout(highlightNextEle, 1000);
+var dijkstra = cy.elements().dijkstra('#a', function(edge){
+    return edge.data('weight');
+});
+var bfs = dijkstra.pathTo( cy.$('#e') );
+var x = 0;
+var highlightNextEle = function(){
+    var el=bfs[x];
+    el.addClass('highlighted');
+    if(x<bfs.length){
+        x++;
+        setTimeout(highlightNextEle, 500);
     }
 };
-
-// kick off first highlight
 highlightNextEle();

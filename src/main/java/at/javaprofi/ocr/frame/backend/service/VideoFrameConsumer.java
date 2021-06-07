@@ -46,7 +46,7 @@ public class VideoFrameConsumer implements FrameConsumer
         }
 
         final BufferedImage invertedColor = ImageHelper.invertImageColor(frame.getImage());
-        final BufferedImage subImage = ImageHelper.getSubImage(invertedColor, 323, 90, 915, 744);
+        final BufferedImage subImage = ImageHelper.getSubImage(invertedColor, 372, 83, 645, 776);
         String filename = duration.get()
             + ".jpg";
         Path output = pathToDstDir.resolve(filename);

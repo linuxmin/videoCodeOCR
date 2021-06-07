@@ -101,7 +101,6 @@ public class FrameExtractorServiceImpl implements FrameExtractorService
                 .disableStream(StreamType.AUDIO)
                 .disableStream(StreamType.SUBTITLE)
                 .disableStream(StreamType.DATA))
-            .addArguments("-threads", "32")
             .executeAsync();
     }
 }
