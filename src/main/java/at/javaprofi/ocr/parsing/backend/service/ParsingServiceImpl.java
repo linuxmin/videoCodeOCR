@@ -89,7 +89,7 @@ public class ParsingServiceImpl implements ParsingService
         //JSON parser object to parse read file
         JSONParser jsonParser = new JSONParser();
 
-        try (FileReader reader = new FileReader("extracted_lines.json"))
+        try (FileReader reader = new FileReader(pathContainer.getExtractedLinesPath().toFile()))
         {
             //Read JSON file
             Object obj = jsonParser.parse(reader);
@@ -97,7 +97,7 @@ public class ParsingServiceImpl implements ParsingService
             JSONArray extractedLinesList = (JSONArray) obj;
 
             //Iterate over employee array
-            extractedLinesList.forEach(extractedLine -> extractedMethodContainerList.add(
+            extractedLinesList.forEach(extractedLine -> extractedMethodContainerList.addAll(
                 parseMethodContainerObject((JSONObject) extractedLine)));
 
         }
@@ -110,21 +110,21 @@ public class ParsingServiceImpl implements ParsingService
 
     }
 
-    private MethodContainer parseMethodContainerObject(JSONObject extractedLinesJSON)
+    private List<MethodContainer> parseMethodContainerObject(JSONObject extractedLinesJSON)
     {
         //Get employee object within list
         JSONArray extractedLinesForDuration = (JSONArray) extractedLinesJSON.get("wordList");
 
+        final List<MethodContainer> methodContainerForDurationList = new ArrayList<>();
         final Long duration = (Long) extractedLinesJSON.get("duration");
-        final MethodContainer methodContainer = new MethodContainer();
-
-        methodContainer.setDuration(duration);
 
         for (Object rawLineObject : extractedLinesForDuration)
         {
             JSONObject extractedLineJSON = (JSONObject) rawLineObject;
-
+            final MethodContainer methodContainer = new MethodContainer();
+            methodContainer.setDuration(duration);
             final String text = (String) extractedLineJSON.get("text");
+
             final Long width = (Long) extractedLineJSON.get("width");
             final Long height = (Long) extractedLineJSON.get("height");
             final Long x = (Long) extractedLineJSON.get("x");
@@ -136,16 +136,17 @@ public class ParsingServiceImpl implements ParsingService
                 new Rectangle(x.intValue(), y.intValue(), width.intValue(), height.intValue());
 
             methodContainer.setBoundingBox(boundingBox);
+            methodContainerForDurationList.add(methodContainer);
         }
 
-        return methodContainer;
+        return methodContainerForDurationList;
     }
 
     private void parseCodeFromSourceCodeAndMapMatchingMethodsAndWriteResultsToJSONFiles(PathContainer pathContainer,
         List<MethodContainer> extractedRawMethodContainerList)
     {
         final Map<String, List<String>> matchedClassesMethodMap =
-            parseCodeFromGroundTruthAndBuildMapWithMatchingClassCandidates(extractedRawMethodContainerList);
+            parseCodeFromGroundTruthAndBuildMapWithMatchingClassCandidates();
 
         final List<MethodContainer> matchedMethodList =
             calculateMatchingSourceMethodsOfClassCandidates(extractedRawMethodContainerList, matchedClassesMethodMap);
@@ -167,8 +168,7 @@ public class ParsingServiceImpl implements ParsingService
 
     }
 
-    private Map<String, List<String>> parseCodeFromGroundTruthAndBuildMapWithMatchingClassCandidates(
-        List<MethodContainer> extractedRawMethodContainerList)
+    private Map<String, List<String>> parseCodeFromGroundTruthAndBuildMapWithMatchingClassCandidates()
     {
 
         final GenericVisitorAdapter<Map<String, List<String>>, Object> genericVisitorAdapter =
@@ -222,14 +222,13 @@ public class ParsingServiceImpl implements ParsingService
 
         final Map<String, List<String>> matchedClassesMethodMap = new HashMap<>();
 
+        final List<String> visitedClasses = readVisitedClassesFromEditorTraceFiles();
+
         parsedMethodNamesPerClass.forEach((className, methodNames) ->
             methodNames.forEach(methodName ->
-                extractedRawMethodContainerList.forEach(extractedMethodContainer ->
+                visitedClasses.forEach(visitedClass ->
                 {
-                    final String extractedLine = extractedMethodContainer.getExtractedLine();
-
-                    if (StringUtils.containsIgnoreCase(extractedLine, "class")
-                        || StringUtils.containsIgnoreCase(extractedLine, className))
+                    if (StringUtils.contains(className, visitedClass))
                     {
                         matchedClassesMethodMap.putIfAbsent(className, parsedMethodNamesPerClass.get(className));
                     }
@@ -321,13 +320,13 @@ public class ParsingServiceImpl implements ParsingService
                     final String extractedLine = extractedMethodContainer.getExtractedLine();
                     if (StringUtils.isNotEmpty(extractedLine))
                     {
-
                         final String[] lineWords = StringUtils.split(extractedLine);
                         final List<String> lineWordsWithoutLineNumber = Arrays.stream(lineWords)
                             .filter(string -> !StringUtils.isNumericSpace(string)).collect(Collectors.toList());
                         final String extractedLineWithoutLineNumber = String.join(" ", lineWordsWithoutLineNumber);
                         final int posBlockOpen = StringUtils.lastIndexOf(extractedLineWithoutLineNumber, "{");
-                        if (posBlockOpen != -1 || StringUtils.containsIgnoreCase(extractedLineWithoutLineNumber,sourceCodeMethodName))
+
+                        if (StringUtils.containsIgnoreCase(extractedLineWithoutLineNumber, sourceCodeMethodName))
                         {
                             final String extractedPossibleMethodName =
                                 StringUtils.substringBeforeLast(extractedLineWithoutLineNumber, "{");
@@ -362,7 +361,7 @@ public class ParsingServiceImpl implements ParsingService
         return matchedMethodList;
     }
 
-    private List<String> readFromJson()
+    private List<String> readVisitedClassesFromEditorTraceFiles()
     {
         final String userRunDir = System.getProperties().getProperty("user.dir");
         final String pathToWrite = userRunDir + "/src/test/resources/";
@@ -372,27 +371,25 @@ public class ParsingServiceImpl implements ParsingService
         try (Stream<Path> pathsOfFiles = Files.walk(Paths.get(pathToWrite), 1))
         {
             pathsOfFiles.forEach(path -> {
-                if(!Files.isDirectory(path)){
+                if (!Files.isDirectory(path))
+                {
                     try (FileReader fileReader = new FileReader(path.toFile()))
                     {
                         final JSONObject jsonObject = (JSONObject) jsonParser.parse(fileReader);
                         final String fullFileName = (String) jsonObject.get("fileName");
-                        System.out.println(fullFileName);
-                        final String fileName = StringUtils.substringAfterLast(fullFileName,"\\");
-                        if(StringUtils.containsIgnoreCase(fullFileName,".java"))
+                        final String fileName = StringUtils.substringAfterLast(fullFileName, "\\");
+                        if (StringUtils.containsIgnoreCase(fullFileName, ".java"))
                         {
                             final String javaClassFile = StringUtils.substringBefore(fileName, ".java");
                             visitedJavaClasses.add(javaClassFile);
                         }
                     }
 
-
                     catch (Exception e)
                     {
                         e.printStackTrace();
                     }
                 }
-
 
             });
         }
