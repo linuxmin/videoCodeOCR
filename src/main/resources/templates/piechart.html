@@ -14,7 +14,7 @@
     <script type="text/javascript" th:src="@{bootstrap.bundle.js}"></script>
 
 
-    <script type="text/javascript" th:src="@{d3.js}"></script>
+    <script type="text/javascript" th:src="@{d3v4.js}"></script>
 
 
     <!-- Latest compiled JavaScript -->
@@ -26,8 +26,18 @@
     <!-- This comes from here: http://fleetinbeing.net/d3e/chord.html -->
     <!-- Another example comes from here: http://exposedata.com/tutorial/chord/latest.html -->
     <style>
-        .bar {
-            fill: steelblue;
+        .arc text {
+            font: 10px sans-serif;
+            text-anchor: middle;
+        }
+
+        .arc path {
+            stroke: #fff;
+        }
+
+        .title {
+            fill: teal;
+            font-weight: bold;
         }
     </style>
     <meta charset="UTF-8">
@@ -38,8 +48,7 @@
         <strong id="projectheader">videoOCR Source Code Extractor</strong>
         <div id="nav_container">
             <ul class="nav nav-tabs">
-                <li class="nav-item"><a class="nav-link active" href="#">Home</a></li>
-                <li class="nav-item"><a class="nav-link" href="#">Documentation</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{home}">Home</a></li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">OCR Extraction</a>
                     <div class="dropdown-menu">
@@ -49,18 +58,16 @@
                         <a class="dropdown-item" href="#">Manage Mapping</a>
                     </div>
                 </li>
-                <li class="nav-item"><a class="nav-link" th:href="@{visualization}">Sample Visualization</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{codeviz}" href="#">Code Visualization</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{animation}">Path Visualization</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{visualization}">Slider Visualization</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{codeviz}" href="#">Eye Gaze Duration</a></li>
             </ul>
         </div>
     </header>
     <body>
-    <svg width="1024" height="768"></svg>
+    <svg width="600" height="700"></svg>
     </body>
 </div>
-<script type="text/javascript" th:src="@{codevisualization.js}"></script>
-<script>
-    d3.select("#paragraph").style("color", "green");
-</script>
+<script type="text/javascript" th:src="@{piechart.js}"></script>
 </body>
 </html>

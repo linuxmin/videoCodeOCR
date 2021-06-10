@@ -11,9 +11,8 @@
 
     <!-- jQuery library -->
     <script type="text/javascript" th:src="@{jquery.min.js}"></script>
-
-
     <script type="text/javascript" th:src="@{bootstrap.bundle.js}"></script>
+    <script type="text/javascript" th:src="@{d3v4.js}"></script>
 
 
     <!-- Latest compiled JavaScript -->
@@ -25,15 +24,17 @@
     <!-- This comes from here: http://fleetinbeing.net/d3e/chord.html -->
     <!-- Another example comes from here: http://exposedata.com/tutorial/chord/latest.html -->
     <style>
-
-        #cy {
-            height: 100%;
-            width: 100%;
-            float: right;
-            position: absolute;
+        path {
+            fill: none;
+            stroke: #999;
         }
 
 
+        svg {
+            display: block;
+            margin-left: auto;
+            margin-right: auto
+        }
     </style>
 
     <meta charset="UTF-8">
@@ -60,19 +61,22 @@
                 <li class="nav-item"><a class="nav-link" th:href="@{codeviz}" href="#">Eye Gaze Duration</a></li>
             </ul>
         </div>
+        <script type="text/javascript" th:src="@{path.js}"></script>
     </header>
     <body>
-
-        <div class="main" id="cy"></div>
-
+    <div id="vis">
+        <button id="play-button" onclick="animateLine()">Play</button>
+    </div>
+    <svg width="210" height="290">
+        <path></path>
+    </svg>
+    <div id="vis2">
+        <button id="play-button2" onclick="animateLineFixation()">Play</button>
+    </div>
+    <svg id="svgFix" width="210" height="290">
+        <path></path>
+    </svg>
     </body>
 </div>
-<script type="text/javascript" th:src="@{cytoscape.js}"></script>
-
-<script src="https://unpkg.com/layout-base/layout-base.js"></script>
-<script src="https://unpkg.com/avsdf-base/avsdf-base.js"></script>
-<script src="cytoscape-avsdf.js"></script>
-<script type="text/javascript" th:src="@{testcyto.js}"></script>
-
 </body>
 </html>

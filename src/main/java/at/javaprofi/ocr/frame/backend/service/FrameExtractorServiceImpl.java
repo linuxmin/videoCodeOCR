@@ -1,12 +1,11 @@
 package at.javaprofi.ocr.frame.backend.service;
 
-import java.io.File;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Stream;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,133 +15,92 @@ import org.springframework.stereotype.Service;
 import com.github.kokorin.jaffree.StreamType;
 import com.github.kokorin.jaffree.ffmpeg.FFmpeg;
 import com.github.kokorin.jaffree.ffmpeg.FrameOutput;
+import com.github.kokorin.jaffree.ffmpeg.NullOutput;
 import com.github.kokorin.jaffree.ffmpeg.UrlInput;
+import com.github.kokorin.jaffree.ffprobe.FFprobe;
+import com.github.kokorin.jaffree.ffprobe.FFprobeResult;
 
-import at.javaprofi.ocr.filestorage.api.dao.PathContainer;
-import at.javaprofi.ocr.filestorage.api.service.FileStorageService;
 import at.javaprofi.ocr.frame.api.service.FrameExtractorService;
-import net.sourceforge.tess4j.ITesseract;
-import net.sourceforge.tess4j.OCRResult;
-import net.sourceforge.tess4j.Tesseract;
-import net.sourceforge.tess4j.TesseractException;
-import net.sourceforge.tess4j.Word;
+import at.javaprofi.ocr.io.api.dao.PathContainer;
+import at.javaprofi.ocr.io.api.service.FileService;
 
 @Service
 public class FrameExtractorServiceImpl implements FrameExtractorService
 {
-    private static final List<String> VIDEO_FILTER = Arrays.asList(".mp4");
+    private static final List<String> VIDEO_FILTER = Arrays.asList(".mp4", ".m4v");
+
     private static final Logger LOG = LoggerFactory.getLogger(FrameExtractorServiceImpl.class);
 
-    private final FileStorageService fileStorageService;
+    private final FileService fileService;
 
     @Autowired
-    public FrameExtractorServiceImpl(FileStorageService fileStorageService)
+    public FrameExtractorServiceImpl(FileService fileService)
     {
-        this.fileStorageService = fileStorageService;
+        this.fileService = fileService;
     }
 
     @Override
-    public void extractCodeFromVideo(String fileName)
+    public void extractFrames(String fileName)
     {
         if (VIDEO_FILTER.stream().noneMatch(fileName::endsWith))
         {
             throw new RuntimeException("No video file provided");
         }
 
-        final Tesseract tesseract = getTesseractInstance(true);
-
         final PathContainer pathContainer =
-            fileStorageService.createDirectoriesAndRetrievePathContainerFromVideoFileName(fileName);
+            fileService.createDirectoriesAndRetrievePathContainerFromVideoFileName(fileName);
 
-        extractFramesToFramePath(pathContainer);
+        final AtomicLong frameCounter = new AtomicLong();
 
-        final Path framesPath = pathContainer.getFramesPath();
-        final Path hocrPath = pathContainer.getHocrPath();
+        final long startTime = System.currentTimeMillis();
+        LOG.info("Started operation at: {}", startTime);
 
-        try (final Stream<Path> framePathStream =
-            fileStorageService.retrieveContainingFilesAsPathStream(framesPath))
-        {
-            framePathStream.forEach(framePath -> doOCRandWriteHocrToXML(tesseract, hocrPath, framePath));
-        }
+        countFramesAndExtractAsyncToFramePath(pathContainer, frameCounter);
     }
 
-    private Tesseract getTesseractInstance(boolean hocr)
-    {
-        final Tesseract tesseract = new Tesseract();
-        tesseract.setDatapath("/usr/local/Cellar/tesseract/4.1.1/share/tessdata");
-        tesseract.setLanguage("eng");
-        tesseract.setHocr(hocr);
-        return tesseract;
-    }
-
-    @Override
-    public List<Word> extractWordsFromVideo(String fileName)
-    {
-        final Tesseract tesseract = getTesseractInstance(false);
-        final PathContainer pathContainer =
-            fileStorageService.createDirectoriesAndRetrievePathContainerFromVideoFileName(fileName);
-
-        extractFramesToFramePath(pathContainer);
-
-        final List<Word> wordList = new ArrayList<>();
-
-        try (final Stream<Path> framePathStream = fileStorageService.retrieveContainingFilesAsPathStream(
-            pathContainer.getFramesPath()))
-        {
-            framePathStream.forEach(framePath -> wordList.addAll(retrieveWords(tesseract,framePath.toFile())));
-        }
-
-        return null;
-    }
-
-    private void extractFramesToFramePath(PathContainer pathContainer)
+    private void countFramesAndExtractAsyncToFramePath(PathContainer pathContainer, AtomicLong frameCount)
     {
         final Path videoPath = pathContainer.getVideoPath();
         final Path framesPath = pathContainer.getFramesPath();
 
+        FFprobeResult result = FFprobe.atPath()
+            .setShowStreams(true).setSelectStreams(StreamType.VIDEO).setCountFrames(true)
+            .setInput(videoPath)
+            .execute();
+
+        final AtomicLong duration = new AtomicLong();
+
+        //needed to get duration for word listener
+        FFmpeg.atPath()
+            .addInput(UrlInput.fromPath(videoPath))
+            .setOverwriteOutput(true)
+            .addOutput(new NullOutput())
+            .setProgressListener(progress -> {
+                duration.set(progress.getTimeMillis());
+            }).execute();
+
+        final int nbFrames = result.getStreams().get(0).getNbFrames();
+
+        frameCount.set(nbFrames);
+
+        AtomicLong currentTimeMillis = new AtomicLong();
+
         FFmpeg.atPath()
             .addInput(UrlInput
                 .fromPath(videoPath))
+            .setProgressListener(progress -> {
+                frameCount.set(progress.getFrame());
+                currentTimeMillis.set(progress.getTimeMillis());
+                double percents = 100. * currentTimeMillis.get() / duration.get();
+                final BigDecimal percentage = BigDecimal.valueOf(percents).setScale(2, RoundingMode.HALF_UP);
+                LOG.info("Frame extraction progress:y {} %", percentage);
+            })
             .addOutput(FrameOutput
-                .withConsumer(new VideoFrameConsumer(framesPath))
-                .setFrameCount(StreamType.VIDEO, 100L)
-                .setFrameRate(1)
+                .withConsumer(new VideoFrameConsumer(framesPath, frameCount))
+                .setFrameRate(60)
                 .disableStream(StreamType.AUDIO)
                 .disableStream(StreamType.SUBTITLE)
                 .disableStream(StreamType.DATA))
-            .execute();
-    }
-
-    private void doOCRandWriteHocrToXML(Tesseract tesseract, Path hocrPath, Path framePath)
-    {
-        final File frameFile = framePath.toFile();
-        String codeFromFrame;
-        try
-        {
-            codeFromFrame = tesseract.doOCR(frameFile.getAbsoluteFile());
-            LOG.info("Extracted frames from: {}", frameFile);
-        }
-        catch (TesseractException e)
-        {
-            throw new RuntimeException("Exception during OCR occurred", e);
-        }
-        fileStorageService.writeHocrToXML(codeFromFrame, hocrPath, framePath);
-    }
-
-    private List<Word> retrieveWords(Tesseract tesseract, File frameFile)
-    {
-        final OCRResult documentsWithResults;
-        try
-        {
-            documentsWithResults =
-                tesseract.createDocumentsWithResults(frameFile.getAbsoluteFile().toString(), "test.xml",
-                    Collections.singletonList(ITesseract.RenderedFormat.HOCR), 1);
-        }
-        catch (TesseractException e)
-        {
-            throw new RuntimeException("Exception during OCR occurred", e);
-        }
-
-        return documentsWithResults.getWords();
+            .executeAsync();
     }
 }

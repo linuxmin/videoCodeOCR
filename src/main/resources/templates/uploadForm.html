@@ -28,18 +28,18 @@
         <div id="nav_container">
             <ul class="nav nav-tabs">
                 <li class="nav-item"><a class="nav-link" th:href="@{home}">Home</a></li>
-                <li class="nav-item"><a class="nav-link" href="#">Documentation</a></li>
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle active" data-toggle="dropdown" href="#">OCR Extraction</a>
+                    <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">OCR Extraction</a>
                     <div class="dropdown-menu">
                         <a class="dropdown-item" th:href="@{video}">Choose/Manage Videos</a>
-                        <a class="dropdown-item" href="#">Manage Frames</a>
+                        <a class="dropdown-item" th:href="@{testviz}">Results</a>
                         <a class="dropdown-item" href="#">Manage HCR</a>
                         <a class="dropdown-item" href="#">Manage Mapping</a>
                     </div>
                 </li>
-                <li class="nav-item"><a class="nav-link" th:href="@{visualization}">Visualization</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{codeviz}" href="#">Code Visualization</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{animation}">Path Visualization</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{visualization}">Slider Visualization</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{codeviz}" href="#">Eye Gaze Duration</a></li>
             </ul>
         </div>
     </header>
@@ -64,9 +64,24 @@
                 <table class="table">
                     <tr th:each="file : ${files}">
                         <td><a th:href="${file}" th:text="${file}"/></td>
-                        <td><form th:action="@{/extract}"  method="post">
+                        <td><form th:action="@{/frame}"  method="post">
                             <input type="hidden" th:value="${file}" name="fileName"/>
-                            <input type="submit" value="Extract Code"/>
+                            <input type="submit" value="Extract Frames"/>
+                        </form>
+                        </td>
+                        <td><form th:action="@{/ocr}"  method="post">
+                            <input type="hidden" th:value="${file}" name="fileName"/>
+                            <input type="submit" value="Perform OCR"/>
+                        </form>
+                        </td>
+                        <td><form th:action="@{/visualize}"  method="post">
+                            <input type="hidden" th:value="${file}" name="fileName"/>
+                            <input type="submit" value="Visualize Code"/>
+                        </form>
+                        </td>
+                        <td><form th:action="@{/classMethodJSON}"  method="post">
+                            <input type="hidden" th:value="${file}" name="fileName"/>
+                            <input type="submit" value="CreateMethodClassCSV"/>
                         </form>
                         </td>
                     </tr>

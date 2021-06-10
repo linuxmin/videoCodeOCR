@@ -11,9 +11,9 @@
 
     <!-- jQuery library -->
     <script type="text/javascript" th:src="@{jquery.min.js}"></script>
-
-
     <script type="text/javascript" th:src="@{bootstrap.bundle.js}"></script>
+    <script type="text/javascript" th:src="@{d3v4.js}"></script>
+    <script src="https://d3js.org/queue.v1.min.js" type="text/javascript"></script>
 
 
     <!-- Latest compiled JavaScript -->
@@ -25,19 +25,25 @@
     <!-- This comes from here: http://fleetinbeing.net/d3e/chord.html -->
     <!-- Another example comes from here: http://exposedata.com/tutorial/chord/latest.html -->
     <style>
-
-        #cy {
-            height: 100%;
-            width: 100%;
-            float: right;
-            position: absolute;
+        svg {
+            height: 500px;
+            width: 500px;
+            border: 1px solid gray;
+        }
+        .link {
+            stroke: #93C464;
         }
 
+        marker {
+            fill: #93C464;
+        }
 
     </style>
 
     <meta charset="UTF-8">
     <title>Test</title>
+
+
 </head>
 <body>
 <div id="wrapper">
@@ -61,18 +67,11 @@
             </ul>
         </div>
     </header>
-    <body>
-
-        <div class="main" id="cy"></div>
-
-    </body>
+    <div id="viz">
+        <svg>
+        </svg>
+    </div>
+    <script type="text/javascript" th:src="@{graphslider.js}"></script>
 </div>
-<script type="text/javascript" th:src="@{cytoscape.js}"></script>
-
-<script src="https://unpkg.com/layout-base/layout-base.js"></script>
-<script src="https://unpkg.com/avsdf-base/avsdf-base.js"></script>
-<script src="cytoscape-avsdf.js"></script>
-<script type="text/javascript" th:src="@{testcyto.js}"></script>
-
 </body>
 </html>
