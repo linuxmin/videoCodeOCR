@@ -6,6 +6,7 @@ var xScale = d3.scaleLinear().range([0, 1600]);
 var yScale = d3.scaleLinear().range([880, 0]);
 var length;
 var path;
+var total_duration;
 
 function doTheMagic(d) {
     var line = d3.line()
@@ -18,6 +19,10 @@ function doTheMagic(d) {
         });
 
     var svg = d3.select('svg');
+
+    total_duration = (d3.max(d, d => d.world_timestamp) - d3.min(d, d => d.world_timestamp)) * 500;
+
+
 
     path = svg.append("path")
         .datum(d)
@@ -42,7 +47,7 @@ function doTheMagic(d) {
         })
         .attr('r', 3)
         .attr("fill", "none")
-        .attr("stroke", "#aaa");
+       // .attr("stroke", "#aaa");
 }
 
 d3.csv("code_gaze.csv", function (d) {
@@ -57,12 +62,12 @@ function animateLine() {
         .transition()
         .ease(d3.easeLinear)
         .attr("stroke-dashoffset", 0)
-        .duration(60000)
+        .duration(total_duration)
         .on("end", () => setTimeout(repeat, 10000)); // this will repeat the animation after waiting 1 second
 
     // Animate the dashoffset changes
     text.transition()
-        .duration(6000)
+        .duration(total_duration)
         .tween("text", function (t) {
             const i = d3.interpolateRound(0, length);
             return function (t) {

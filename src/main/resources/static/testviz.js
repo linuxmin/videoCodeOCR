@@ -10,6 +10,7 @@ d3.csv("total_duration.csv", function (error, data) {
 
     var minMax = d3.extent(data, d => d.duration);
 
+
     var xScale = d3.scaleLinear().domain(minMax).range([100, width]);
     var yScale = d3.scaleBand().range([height, 0]);
 
