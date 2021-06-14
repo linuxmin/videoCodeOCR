@@ -50,7 +50,7 @@ public class EditorTraceToJsonTest
     public void readFileAndWriteToJson()
     {
         final String userRunDir = System.getProperties().getProperty("user.dir");
-        final String pathToFile = userRunDir + "/src/test/resources/trace_editor.txt";
+        final String pathToFile = userRunDir + "/src/test/resources/trace_editor_p0.txt";
         final String pathToWrite = userRunDir + "/src/test/resources/";
 
         try
@@ -113,10 +113,13 @@ public class EditorTraceToJsonTest
 
             });
         }
+
         catch (Exception e)
         {
             e.printStackTrace();
         }
+        visitedJavaClasses.forEach(System.out::println);
+
     }
 }
 

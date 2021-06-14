@@ -1,5 +1,6 @@
 package at.javaprofi.ocr.frame.backend.service;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -12,7 +13,13 @@ import com.github.kokorin.jaffree.ffmpeg.Frame;
 import com.github.kokorin.jaffree.ffmpeg.FrameConsumer;
 import com.github.kokorin.jaffree.ffmpeg.Stream;
 
+import net.sourceforge.tess4j.ITessAPI;
+import net.sourceforge.tess4j.ITesseract;
+import net.sourceforge.tess4j.TessAPI1;
+import net.sourceforge.tess4j.Tesseract1;
+import net.sourceforge.tess4j.TesseractException;
 import net.sourceforge.tess4j.util.ImageHelper;
+import net.sourceforge.tess4j.util.ImageIOHelper;
 
 /**
  * custom implementation of FrameConsumer
@@ -46,7 +53,7 @@ public class VideoFrameConsumer implements FrameConsumer
         }
 
         final BufferedImage invertedColor = ImageHelper.invertImageColor(frame.getImage());
-        final BufferedImage subImage = ImageHelper.getSubImage(invertedColor, 372, 83, 645, 776);
+        final BufferedImage subImage = ImageHelper.getSubImage(invertedColor, 372, 83, 810, 776);
         String filename = duration.get()
             + ".jpg";
         Path output = pathToDstDir.resolve(filename);
