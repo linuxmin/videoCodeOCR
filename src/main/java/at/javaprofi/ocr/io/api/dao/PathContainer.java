@@ -12,7 +12,7 @@ public class PathContainer
     {
         private Path videoPath;
         private Path framesPath;
-        private Path jsonPath;
+        private Path visualizationPath;
         private Path extractedLinesPath;
         private Path methodMatchesPath;
         private Path totalDurationPath;
@@ -38,9 +38,9 @@ public class PathContainer
             return this;
         }
 
-        public PathContainerBuilder jsonPath(Path jsonPath)
+        public PathContainerBuilder visualizationPath(Path visualizationPath)
         {
-            this.jsonPath = jsonPath;
+            this.visualizationPath = visualizationPath;
             return this;
         }
 
@@ -68,7 +68,7 @@ public class PathContainer
 
     private final Path framesPath;
 
-    private final Path jsonPath;
+    private final Path visualizationPath;
 
     private final Path extractedLinesPath;
 
@@ -80,7 +80,7 @@ public class PathContainer
     {
         this.videoPath = pathContainerBuilder.videoPath;
         this.framesPath = pathContainerBuilder.framesPath;
-        this.jsonPath = pathContainerBuilder.jsonPath;
+        this.visualizationPath = pathContainerBuilder.visualizationPath;
         this.extractedLinesPath = pathContainerBuilder.extractedLinesPath;
         this.methodMatchesPath = pathContainerBuilder.methodMatchesPath;
         this.totalDurationPath = pathContainerBuilder.totalDurationPath;
@@ -96,9 +96,9 @@ public class PathContainer
         return framesPath;
     }
 
-    public Path getJsonPath()
+    public Path getVisualizationPath()
     {
-        return jsonPath;
+        return visualizationPath;
     }
 
     public Path getExtractedLinesPath()

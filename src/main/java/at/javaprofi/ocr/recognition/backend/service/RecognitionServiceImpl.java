@@ -79,13 +79,13 @@ public class RecognitionServiceImpl implements RecognitionService
         writeWordContainerListToJSON(wordContainerList, pathContainer.getExtractedLinesPath());
     }
 
-    private void writeWordContainerListToJSON(List<WordContainer> wordContainerList, Path jsonPath)
+    private void writeWordContainerListToJSON(List<WordContainer> wordContainerList, Path visualizationPath)
     { //First Employee
 
-        LOG.info("writing extracted lines to json file: {}", jsonPath);
+        LOG.info("writing extracted lines to json file: {}", visualizationPath);
 
         //Write JSON file
-        try (FileWriter file = new FileWriter(jsonPath.toFile()))
+        try (FileWriter file = new FileWriter(visualizationPath.toFile()))
         {
             final JSONArray extractedJSON = new JSONArray();
 
@@ -116,7 +116,7 @@ public class RecognitionServiceImpl implements RecognitionService
             file.write(extractedJSON.toJSONString());
             file.flush();
 
-            LOG.info("finished writing json file: {}", jsonPath);
+            LOG.info("finished writing json file: {}", visualizationPath);
 
 
         }

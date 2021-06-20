@@ -46,6 +46,44 @@ public class FileServiceImpl implements FileService
     }
 
     @Override
+    public void storePupilFile(MultipartFile file, String videoFileName)
+    {
+        final String originalFilename = file.getOriginalFilename();
+        LOG.info("uploading pupil data file {} for video {}", originalFilename, videoFileName);
+
+        try
+        {
+            if (file.isEmpty())
+            {
+                throw new RuntimeException(videoFileName + "Cannot store empty file");
+            }
+
+            final PathContainer pathsForFile =
+                createDirectoriesAndRetrievePathContainerFromVideoFileName(videoFileName);
+
+            final Path destinationFile = Paths.get(pathsForFile.getVisualizationPath().toString(), originalFilename);
+
+            if (Files.exists(destinationFile, LinkOption.NOFOLLOW_LINKS))
+            {
+                throw new RuntimeException(videoFileName + "File already exists and will not be overridden!");
+            }
+
+            try (InputStream inputStream = file.getInputStream())
+            {
+                Files.copy(inputStream, destinationFile,
+                    StandardCopyOption.REPLACE_EXISTING);
+            }
+
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(videoFileName + "Uploading pupil file failed!",e);
+        }
+
+        LOG.info("uploading {} successful", originalFilename);
+    }
+
+    @Override
     public void store(MultipartFile file)
     {
         final String originalFilename = file.getOriginalFilename();
@@ -171,10 +209,10 @@ public class FileServiceImpl implements FileService
         final Path videoFileName = Paths.get(fileName).getFileName();
         final Path videoPath = videoLocation.resolve(videoFileName);
         final Path framePath = frameLocation.resolve(FilenameUtils.removeExtension(videoFileName.toString()));
-        final Path jsonPath = framePath.resolve("json");
-        final Path extractedLinesPath = Paths.get(jsonPath.toString(), "extracted_lines.json");
-        final Path methodMatchesPath = Paths.get(jsonPath.toString(), "method_matches.json");
-        final Path totalDurationPath = Paths.get(jsonPath.toString(), "total_duration.json");
+        final Path visualizationPath = framePath.resolve("vizData");
+        final Path extractedLinesPath = Paths.get(visualizationPath.toString(), "extracted_lines.json");
+        final Path methodMatchesPath = Paths.get(visualizationPath.toString(), "method_matches.json");
+        final Path totalDurationPath = Paths.get(visualizationPath.toString(), "total_duration.json");
 
         try
         {
@@ -183,9 +221,9 @@ public class FileServiceImpl implements FileService
                 Files.createDirectories(framePath.toAbsolutePath());
 
             }
-            if (Files.notExists(jsonPath))
+            if (Files.notExists(visualizationPath))
             {
-                Files.createDirectories(jsonPath);
+                Files.createDirectories(visualizationPath);
             }
         }
         catch (IOException e)
@@ -195,7 +233,7 @@ public class FileServiceImpl implements FileService
 
         return new PathContainer.PathContainerBuilder().videoPath(videoPath)
             .framesPath(framePath)
-            .jsonPath(jsonPath)
+            .visualizationPath(visualizationPath)
             .extractedLinesPath(extractedLinesPath)
             .methodMatchesPath(methodMatchesPath)
             .totalDurationPath(totalDurationPath)
@@ -203,30 +241,30 @@ public class FileServiceImpl implements FileService
     }
 
     @Override
-    public void writeMethodContainerListToJSON(Path jsonPath, List<MethodContainer> matchedMethodList,
+    public void writeMethodContainerListToJSON(Path visualizationPath, List<MethodContainer> matchedMethodList,
         String[] header)
     {
 
-        try (FileWriter file = new FileWriter(jsonPath.toFile()))
+        try (FileWriter file = new FileWriter(visualizationPath.toFile()))
         {
             final JSONArray jsonMethodContainerList = new JSONArray();
 
             matchedMethodList.forEach(methodContainer -> {
 
                 final JSONObject jsonMethodContainer = new JSONObject();
-                jsonMethodContainer.put("duration", methodContainer.getDuration());
+                jsonMethodContainer.put("duration_current", methodContainer.getDuration());
 
-                jsonMethodContainer.put("className", methodContainer.getClassName());
-                jsonMethodContainer.put("methodName", methodContainer.getMethodName());
+                jsonMethodContainer.put("class_name", methodContainer.getClassName());
+                jsonMethodContainer.put("method_name", methodContainer.getMethodName());
 
                 final Rectangle boundingBox = methodContainer.getBoundingBox();
 
                 if (boundingBox != null)
                 {
-                    jsonMethodContainer.put("x", boundingBox.x);
-                    jsonMethodContainer.put("y", boundingBox.y);
-                    jsonMethodContainer.put("width", boundingBox.width);
-                    jsonMethodContainer.put("height", boundingBox.height);
+                    jsonMethodContainer.put("x_pos", boundingBox.x);
+                    jsonMethodContainer.put("y_pos", boundingBox.y);
+                    jsonMethodContainer.put("width_box", boundingBox.width);
+                    jsonMethodContainer.put("height_box", boundingBox.height);
                 }
 
                 jsonMethodContainerList.add(jsonMethodContainer);

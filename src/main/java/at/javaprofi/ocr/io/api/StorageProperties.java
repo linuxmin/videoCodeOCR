@@ -12,12 +12,12 @@ public class StorageProperties
     /**
      * Folder location for storing videos
      */
-    private String videoLocation = "filestorage-dir";
+    private String videoLocation = "public/filestorage-dir";
 
     /**
      * Folder location for storing frames
      */
-    private String frameLocation = "extracted-dir";
+    private String frameLocation = "public/extracted-dir";
 
     public String getVideoLocation()
     {

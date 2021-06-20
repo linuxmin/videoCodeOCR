@@ -11,11 +11,39 @@
 
     <!-- jQuery library -->
     <script type="text/javascript" th:src="@{jquery.min.js}"></script>
+
+
     <script type="text/javascript" th:src="@{bootstrap.bundle.js}"></script>
-    <script type="text/javascript" th:src="@{d3.js}"></script>
+
 
     <!-- Latest compiled JavaScript -->
     <script type="text/javascript" th:src="@{http_maxcdn.bootstrapcdn.com_bootstrap_4.5.2_js_bootstrap.js}"></script>
+
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <title>Chord Diagram</title>
+    <!-- <script type="text/javascript" src="http://fleetinbeing.net/d3/d3.layout.js"></script> -->
+    <!-- This comes from here: http://fleetinbeing.net/d3e/chord.html -->
+    <!-- Another example comes from here: http://exposedata.com/tutorial/chord/latest.html -->
+    <style>
+
+        circle {
+            fill: rgb(31, 119, 180);
+            fill-opacity: .25;
+            stroke: rgb(31, 119, 180);
+            stroke-width: 1px;
+        }
+
+        .leaf circle {
+            fill: #ff7f0e;
+            fill-opacity: 1;
+        }
+
+        text {
+            font: 10px sans-serif;
+            text-anchor: middle;
+        }
+
+    </style>
     <meta charset="UTF-8">
     <title>Test</title>
 </head>
@@ -41,6 +69,13 @@
             </ul>
         </div>
     </header>
+    <body>
+    <svg></svg>
+    </body>
 </div>
+<script type="text/javascript" th:src="@{d3v4.js}"></script>
+
+<script type="text/javascript" th:src="@{circlepacking.js}"></script>
+
 </body>
 </html>

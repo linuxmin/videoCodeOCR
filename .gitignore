@@ -10,6 +10,7 @@
 /exported-dir
 /src/main/resources/static/examples
 /src/main/resources/static/examples/captures
+/public/extracted-dir
 *_backup*
 *.hocr
 *.csv
@@ -18,7 +19,7 @@
 *.m4v
 # BlueJ files
 *.ctxt
-
+*.jpg
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 

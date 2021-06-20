@@ -2,20 +2,22 @@ var lineGenerator = d3.line()
     .curve(d3.curveLinear);
 
 
-var xScale = d3.scaleLinear().range([0, 1600]);
-var yScale = d3.scaleLinear().range([880, 0]);
+var xScale = d3.scaleLinear().range([0, 800]);
+var yScale = d3.scaleLinear().range([400, 0]);
 var length;
 var path;
 var total_duration;
 
+var csvFile;
+var line;
 function doTheMagic(d) {
-    var line = d3.line()
+     line = d3.line()
         .x(function (d) {
-            return xScale(d.x_norm);
+            return xScale(d.norm_pos_x);
         })
-        //        .x(function(d) { return d.x_norm })
+        //        .x(function(d) { return d.norm_pos_x })
         .y(function (d) {
-            return yScale(d.y_norm);
+            return yScale(d.norm_pos_y);
         });
 
     var svg = d3.select('svg');
@@ -25,73 +27,167 @@ function doTheMagic(d) {
 
 
     path = svg.append("path")
-        .datum(d)
+        .datum(d.filter(function (d) {
+                return d.on_surf === "True"
+            })
+        )
+        .attr("id", "path")
         .attr("fill", "none")
-        .attr("stroke", "steelblue")
         .attr("stroke-width", 1.5)
-        .attr("d", line)
+        .attr("d", line);
 
+    var totalLength = path.node().getTotalLength();
+    console.log(totalLength);
+    d3.select('svg')
+        .selectAll('circle')
+        .data(d.filter(function (d) {
+            return d.on_surf === "True"
+        }))
+        .enter()
+        .append('circle')
+        .attr("class", "point")
+        .attr('cx', function (d) {
+            return xScale(d.norm_pos_x);
+        })
+        .attr('cy', function (d) {
+            return yScale(d.norm_pos_y);
+        })
+        .attr('r', 3)
+        //  .attr("fill", "none")
+        .attr("fill", "#aaa").style("opacity", 0);
+
+    path
+        .attr("stroke-dasharray", totalLength + " " + totalLength)
+        .attr("stroke-dashoffset", totalLength)
+        .transition()
+        .duration(6000)
+        .ease(d3.easeLinear)
+        .tween("line", function() {
+            var interp = d3.interpolateNumber(totalLength, 0);
+            var self = d3.select(this);
+            return function(t) {
+                var offset = interp(t);
+                self.attr("stroke-dashoffset", offset);
+
+                var xPos = path.node().getPointAtLength(totalLength - offset).x;
+                svg.selectAll(".point").each(function(){
+                    var point = d3.select(this);
+                    var number = +point.attr('cx');
+
+                    if(xPos === number){
+                        console.log("xPos")
+                        console.log(xPos)
+                        console.log("pointcx")
+                        console.log(number)
+                        console.log(" ");
+
+                    }
+
+                    if (xPos > number){
+                        point.style('opacity',1);
+                    }
+                })
+            };
+        });
 
     length = path.node().getTotalLength();
 
-    d3.select('svg')
-        .selectAll('circle')
-        .data(d)
-        .enter()
-        .append('circle')
-        .attr('cx', function (d) {
-            return xScale(d.x_norm);
-        })
-        .attr('cy', function (d) {
-            return yScale(d.y_norm);
-        })
-        .attr('r', 3)
-        .attr("fill", "none")
-       // .attr("stroke", "#aaa");
+
+    svg.append("linearGradient").attr("id", "line-gradient").attr("gradientUnits", "userSpaceOnUse").attr("x1", 0).attr("y1", yScaleFix(0)).attr("x2", 1).attr("y2", yScaleFix(1)).selectAll("stop").data([{
+        offset: "0%",
+        color: "yellow"
+    }, {offset: "20%", color: "red"}, {offset: "40%", color: "purple"}, {offset: "62%", color: "black"}, {
+        offset: "62%",
+        color: "black"
+    }, {offset: "100%", color: "yellow"}]).enter().append("stop").attr("offset", function (d) {
+        return d.offset;
+    }).attr("stop-color", function (d) {
+        return d.color;
+    });
 }
 
-d3.csv("code_gaze.csv", function (d) {
-    doTheMagic(d);
-});
+function visualizeInput(videoName) {
+    var s = "/extracted-dir/" + videoName + "/vizData/fixations_on_surface_Code.csv";
+
+    d3.csv(s, function (d) {
+        doTheMagic(d);
+    });
+}
+
 
 // This function will animate the path over and over again
 function animateLine() {
-    // Animate the path by setting the initial offset and dasharray and then transition the offset to 0
+    var totalLength = path.node().getTotalLength();
+    path
+        .attr("stroke-dasharray", totalLength + " " + totalLength)
+        .attr("stroke-dashoffset", totalLength)
+        .transition()
+        .duration(20000)
+        .ease(d3.easeLinear)
+        .attr("stroke-dashoffset", 0)
+        .tween("line", function() {
+            var interp = d3.interpolateNumber(totalLength, 0);
+            var self = d3.select(this);
+            return function(t) {
+                var offset = interp(t);
+                self.attr("stroke-dashoffset", offset);
+
+                var xPos = path.node().getPointAtLength(totalLength - offset).x;
+                d3.select('svg')
+                    .selectAll('.point').each(function(){
+                    var point = d3.select(this);
+                    var number = +point.attr('cx');
+                    if (xPos > number){
+                        point.style('opacity',1);
+                        point.style("fill","red");
+                    }
+                })
+            };
+        });
+
+  /*  // Animate the path by setting the initial offset and dasharray and then transition the offset to 0
     path.attr("stroke-dasharray", length + " " + length)
         .attr("stroke-dashoffset", length)
         .transition()
         .ease(d3.easeLinear)
         .attr("stroke-dashoffset", 0)
-        .duration(total_duration)
+        .duration(total_duration/3)
         .on("end", () => setTimeout(repeat, 10000)); // this will repeat the animation after waiting 1 second
+*/
 
-    // Animate the dashoffset changes
-    text.transition()
-        .duration(total_duration)
-        .tween("text", function (t) {
-            const i = d3.interpolateRound(0, length);
-            return function (t) {
-                this.textContent = "stroke-dashoffset: " + i(t);
-            };
-        });
 };
 
 
-var xScaleFix = d3.scaleLinear().range([0, 210]);
-var yScaleFix = d3.scaleLinear().range([290, 0]);
+var xScaleFix = d3.scaleLinear().range([0, 800]);
+var yScaleFix = d3.scaleLinear().range([400, 0]);
 var lengthFix;
 var pathFix;
 
-d3.csv("examples/fixations_cover.csv", function (d) {
+d3.csv("code_gaze.csv", function (d) {
     var lineFix = d3.line()
         .x(function (d) {
             return xScaleFix(d.norm_pos_x);
         })
-        //        .x(function(d) { return d.x_norm })
+        //        .x(function(d) { return d.norm_pos_x })
         .y(function (d) {
             return yScaleFix(d.norm_pos_y);
         });
 
+    var lineData = d.map(function (point, index, arr) {
+        var next = arr[index + 1],
+            prev = arr[index - 1];
+        return {
+            x: point.norm_pos_x,
+            y: point.norm_pos_y,
+            x1: point.norm_pos_x,
+            y1: point.norm_pos_y,
+            x2: (next) ? next.norm_pos_x : prev.norm_pos_x,
+            y2: (next) ? next.norm_pos_y : prev.norm_pos_y
+        };
+    });
+
+
+    console.log(lineData);
     var svgFix = d3.select("#svgFix");
 
     pathFix = svgFix.append("path")
@@ -100,7 +196,12 @@ d3.csv("examples/fixations_cover.csv", function (d) {
         .attr("fill", "none")
         .attr("stroke", "steelblue")
         .attr("stroke-width", 1.5)
-        .attr("d", lineFix)
+        .attr("d", lineFix).style("stroke", function (d) {
+            if (Math.abs((d[0].norm_pos_x - d[1].norm_pos_x)) > 0.5) {
+                return "blue";
+            }
+            return "red";
+        });
 
     d3.select('#svgFix')
         .selectAll('circle')
@@ -114,40 +215,28 @@ d3.csv("examples/fixations_cover.csv", function (d) {
             return yScale(d.norm_pos_y);
         })
         .attr('r', 3)
-        .attr("fill", "none")
-        .attr("stroke", "#aaa");
+        .attr("fill", "none").style("opacity", 0);;
 
 
     lengthFix = pathFix.node().getTotalLength();
+    /*
+        svgFix.append("linearGradient").attr("id", "line-gradient-fix").attr("gradientUnits", "userSpaceOnUse").attr("x1", xScaleFix(0)).attr("y1", yScaleFix(0)).attr("x2", xScaleFix(0)).attr("y2", yScaleFix(1)).selectAll("stop").data([{
+            offset: "0%",
+            color: "lawngreen"
+        }, {offset: "10%", color: "red"}, {offset: "20%", color: "purple"}, {offset: "62%", color: "black"}, {
+            offset: "62%",
+            color: "black"
+        }, {offset: "100%", color: "red"}]).enter().append("stop").attr("offset", function (d) {
+            return d.offset;
+        }).attr("stop-color", function (d) {
+            return d.color;
+        });*/
 
 });
 
 var xScaleWord = d3.scaleLinear().domain([0, 20]).range([0, 1]);
 var yScaleWord = d3.scaleLinear().domain([0, 800]).range([0, 1]);
 
-d3.csv("capture.csv", function (d) {
-    d3.select("#svgFix")
-        .selectAll('circle')
-        .data(d)
-        .enter()
-        .append('circle')
-        .attr('cx', function (d) {
-
-            var xScaleWord1 = xScaleWord(d.x);
-
-            return xScaleFix(xScaleWord1);
-        })
-
-
-        .attr('cy', function (d) {
-
-            var yScaleWord1 = yScaleWord(d.y);
-
-            return yScaleFix(yScaleWord1);
-        })
-        .attr('r', 5)
-        .attr("fill", "red");
-});
 
 // This function will animate the path over and over again
 function animateLineFixation() {
@@ -158,8 +247,9 @@ function animateLineFixation() {
         .transition()
         .ease(d3.easeLinear)
         .attr("stroke-dashoffset", 0)
-        .duration(6000)
+        .duration(total_duration)
         .on("end", () => setTimeout(repeat, 1000)); // this will repeat the animation after waiting 1 second
+
 
     // Animate the dashoffset changes
     text.transition()
@@ -217,3 +307,29 @@ function getWordsForFrame(d) {
     }
 }
 
+//Get path start point for placing marker
+function pathStartPoint(path) {
+    var d = path.attr("d"),
+        dsplitted = d.split(" ");
+    return dsplitted[1];
+}
+
+function transition(path) {
+    path.transition()
+        .duration(7500)
+        .attrTween("stroke-dasharray", tweenDash)
+        .each("end", function () {
+            d3.select(this).call(transition);
+        });// infinite loop
+}
+
+function tweenDash() {
+    var l = path.node().getTotalLength();
+    var i = d3.interpolateString("0," + l, l + "," + l); // interpolation of stroke-dasharray style attr
+    return function (t) {
+        var marker = d3.select("#marker");
+        var p = path.node().getPointAtLength(t * l);
+        marker.attr("transform", "translate(" + p.x + "," + p.y + ")");//move marker
+        return i(t);
+    }
+}

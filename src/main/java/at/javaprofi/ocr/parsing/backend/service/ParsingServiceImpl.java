@@ -314,6 +314,7 @@ public class ParsingServiceImpl implements ParsingService
         extractedRawMethodContainerList.sort(Comparator.comparingLong(MethodContainer::getDuration));
 
         final List<MethodContainer> matchedMethodList = new ArrayList<>();
+        final Set<MethodContainer> setOfMethods = new HashSet<>();
         matchedClassesMethodMap.forEach(
             (matchedSourceCodeClass, containingSourceCodeMethods) -> containingSourceCodeMethods.forEach(
                 sourceCodeMethodName -> extractedRawMethodContainerList.forEach(extractedMethodContainer -> {
@@ -349,7 +350,7 @@ public class ParsingServiceImpl implements ParsingService
                                     matchedMethodContainer.setBoundingBox(extractedMethodContainer.getBoundingBox());
 
                                     matchedMethodList.add(matchedMethodContainer);
-
+                                    setOfMethods.add(matchedMethodContainer);
                                 }
                             }
                         }

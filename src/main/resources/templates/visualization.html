@@ -25,6 +25,15 @@
     <!-- This comes from here: http://fleetinbeing.net/d3e/chord.html -->
     <!-- Another example comes from here: http://exposedata.com/tutorial/chord/latest.html -->
     <style>
+
+        #marker{
+            fill: green;
+        }
+
+        #path {
+            stroke: url(#line-gradient);
+        }
+
         #play-button:hover {
             background-color: #696969;
         }
@@ -90,17 +99,27 @@
         </div>
     </header>
     <body>
+
+    <div class="form-group blu-margin">
+        <select class="form-control" th:field="${files}"  id="selectVideo">
+            <option value="0">select video</option>
+            <option th:each="file : ${files}" th:value="${file.getPath().substring(file.getPath().lastIndexOf('/') +1, file.getPath.lastIndexOf('.'))}" th:text="${file.getPath().substring(file.getPath().lastIndexOf('/') +1, file.getPath.lastIndexOf('.'))}"></option>
+        </select>
+        <button id="vizButton" onclick="visualizeInput($('#selectVideo option:selected' ).text())"/>
+    </div>
+
     <div id="vis">
         <button id="play-button" onclick="animateLine()">Play</button>
+
     </div>
-    <svg width="1600" height="880">
+    <svg width="800" height="400">
         <path></path>
     </svg>
     <div id="vis2">
         <button id="play-button2" onclick="animateLineFixation()">Play</button>
     </div>
-    <svg id="svgFix" width="210" height="290">
-        <path></path>
+    <svg id="svgFix" width="800" height="400">
+        <path id="pupu"></path>
     </svg>
 
     </body>
