@@ -4,6 +4,15 @@
 }
 
 
+.container {
+    margin: 10px;
+}
+
+.margin {
+    margin-top: 10px;
+    margin-bottom: 10px;
+
+}
 html, body {
     margin: 0;
     padding: 0;
@@ -78,5 +87,8 @@ p {
     position: relative;
 }
 
+a, input{
+    margin: 2px;
+}
 
 

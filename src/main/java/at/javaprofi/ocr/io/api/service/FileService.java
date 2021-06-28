@@ -33,6 +33,13 @@ public interface FileService
     Stream<Path> loadVideos();
 
     /**
+     * fetching paths stream of uploaded data to visualize a given video
+     *
+     * @return the stream of uploaded file paths
+     */
+    List<Path> loadVisualizationPathsForVideo();
+
+    /**
      * fetches the location path of a video
      *
      * @param fileName the file name of the video
@@ -47,7 +54,17 @@ public interface FileService
      * @return
      * @throws MalformedURLException
      */
-    Resource loadAsResource(String fileName) throws MalformedURLException;
+    Resource loadVideoAsResource(String fileName) throws MalformedURLException;
+
+
+    /**
+     * fetches the file found by the given file name as resource to be downloaded within the browser
+     *
+     * @param fileName
+     * @return
+     * @throws MalformedURLException
+     */
+    Resource loadVizDataFileAsResource(String fileName) throws MalformedURLException;
 
     /**
      * fetching stream of file paths contained in the given path
@@ -65,8 +82,8 @@ public interface FileService
      */
     PathContainer createDirectoriesAndRetrievePathContainerFromVideoFileName(String fileName);
 
-    void writeMethodContainerListToJSON(Path visualizationPath, List<MethodContainer> matchedMethodList,
-        String[] header);
+    void writeVisualizationDataToJSON(PathContainer pathContainer, List<MethodContainer> matchedMethodList,
+        List<MethodContainer> totalDurationMethodList);
 
     void storePupilFile(MultipartFile file, String fileName);
 }

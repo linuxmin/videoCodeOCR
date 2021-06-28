@@ -2,9 +2,19 @@
     diameter = +svg.attr("width"),
     g = svg.append("g").attr("transform", "translate(2,2)"),
     format = d3.format(",d");*/
+import { select } from 'd3-selection'
 d3.json("method_test.json", nestIt);
 var xScale = d3.scaleLinear().domain([0, 18835]).range([200, 800]);
 var yScale = d3.scaleLinear().domain([0, 18835]).range([100, 500]);
+
+
+select(node)
+    .selectAll("rect.bar")
+    .data(this.props.data)
+    .enter()
+    .append("rect")
+    .attr("class", "bar")
+
 
 var lineFunction = d3.line()
     .x(function (d) {
@@ -17,7 +27,6 @@ var lineFunction = d3.line()
 function nestIt(data) {
     var nestedData = d3.nest().key(d => d.duration_current).entries(data);
 
-    //   nestedData.forEach(d => console.log(d));
     var links = [];
     var nodes = [];
 

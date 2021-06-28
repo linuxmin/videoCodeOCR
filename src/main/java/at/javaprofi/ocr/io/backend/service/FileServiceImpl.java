@@ -10,10 +10,13 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
@@ -28,6 +31,7 @@ import at.javaprofi.ocr.frame.api.word.MethodContainer;
 import at.javaprofi.ocr.io.api.StorageProperties;
 import at.javaprofi.ocr.io.api.dao.PathContainer;
 import at.javaprofi.ocr.io.api.service.FileService;
+import at.javaprofi.ocr.parsing.api.dao.GraphNodeLink;
 
 @Service
 public class FileServiceImpl implements FileService
@@ -77,7 +81,7 @@ public class FileServiceImpl implements FileService
         }
         catch (IOException e)
         {
-            throw new RuntimeException(videoFileName + "Uploading pupil file failed!",e);
+            throw new RuntimeException(videoFileName + "Uploading pupil file failed!", e);
         }
 
         LOG.info("uploading {} successful", originalFilename);
@@ -148,13 +152,43 @@ public class FileServiceImpl implements FileService
     }
 
     @Override
+    public List<Path> loadVisualizationPathsForVideo()
+    {
+        try
+        {
+            LOG.debug("Loading vizData from {}", frameLocation);
+            final List<Path> vizDataPaths =
+                Files.find(frameLocation, 2, (p, a) -> {
+                    final String currentPath = p.getFileName().toString();
+                    return Files.isDirectory(p) && StringUtils.equals(currentPath, "vizData");
+                })
+                    .collect(Collectors.toList());
+
+            final List<Path> vizFilesPathList = new ArrayList<>();
+
+            for (Path vizPath : vizDataPaths)
+            {
+                vizFilesPathList.addAll(Files.walk(vizPath, 1)
+                    .filter(path -> !path.equals(vizPath))
+                    .map(videoLocation::relativize).collect(Collectors.toList()));
+            }
+
+            return vizFilesPathList;
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException("Failed to read stored videos! ", e);
+        }
+    }
+
+    @Override
     public Path resolveVideoSourcePathFromFileName(String fileName)
     {
         return videoLocation.resolve(fileName);
     }
 
     @Override
-    public Resource loadAsResource(String fileName)
+    public Resource loadVideoAsResource(String fileName)
     {
         final Path file = resolveVideoSourcePathFromFileName(fileName);
         try
@@ -162,6 +196,25 @@ public class FileServiceImpl implements FileService
             return new UrlResource(file.toUri());
         }
         catch (MalformedURLException e)
+        {
+            throw new RuntimeException(
+                "Failed to resolveVideoSourcePathFromFileName file:" + fileName + " as resource! ", e);
+        }
+    }
+
+    @Override
+    public Resource loadVizDataFileAsResource(String fileName)
+    {
+        try
+        {
+            final Path vizFilePath =
+                Files.find(frameLocation, 3, (p, a) -> StringUtils.equals(p.getFileName().toString(), fileName))
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("Could not find path for vizDataFile: " + fileName));
+
+            return new UrlResource(vizFilePath.toUri());
+        }
+        catch (IOException e)
         {
             throw new RuntimeException(
                 "Failed to resolveVideoSourcePathFromFileName file:" + fileName + " as resource! ", e);
@@ -210,9 +263,12 @@ public class FileServiceImpl implements FileService
         final Path videoPath = videoLocation.resolve(videoFileName);
         final Path framePath = frameLocation.resolve(FilenameUtils.removeExtension(videoFileName.toString()));
         final Path visualizationPath = framePath.resolve("vizData");
-        final Path extractedLinesPath = Paths.get(visualizationPath.toString(), "extracted_lines.json");
-        final Path methodMatchesPath = Paths.get(visualizationPath.toString(), "method_matches.json");
-        final Path totalDurationPath = Paths.get(visualizationPath.toString(), "total_duration.json");
+        final String visualizationPathString = visualizationPath.toString();
+
+        final Path extractedLinesPath = Paths.get(visualizationPathString, "extracted_lines.json");
+        final Path methodMatchesPath = Paths.get(visualizationPathString, "method_matches.json");
+        final Path totalDurationPath = Paths.get(visualizationPathString, "total_duration.json");
+        final Path graphLinkPath = Paths.get(visualizationPathString, "graph_link.json");
 
         try
         {
@@ -237,14 +293,21 @@ public class FileServiceImpl implements FileService
             .extractedLinesPath(extractedLinesPath)
             .methodMatchesPath(methodMatchesPath)
             .totalDurationPath(totalDurationPath)
+            .graphLinkPath(graphLinkPath)
             .build();
     }
 
     @Override
-    public void writeMethodContainerListToJSON(Path visualizationPath, List<MethodContainer> matchedMethodList,
-        String[] header)
+    public void writeVisualizationDataToJSON(PathContainer pathContainer, List<MethodContainer> matchedMethodList,
+        List<MethodContainer> totalDurationMethodList)
     {
+        writeClassSourceTargetToJSON(matchedMethodList, pathContainer.getGraphLinkPath());
+        writeMethodContainerListToJSON(matchedMethodList, pathContainer.getMethodMatchesPath());
+        writeMethodContainerListToJSON(totalDurationMethodList, pathContainer.getTotalDurationPath());
+    }
 
+    private void writeMethodContainerListToJSON(List<MethodContainer> matchedMethodList, Path visualizationPath)
+    {
         try (FileWriter file = new FileWriter(visualizationPath.toFile()))
         {
             final JSONArray jsonMethodContainerList = new JSONArray();
@@ -277,6 +340,59 @@ public class FileServiceImpl implements FileService
         {
             throw new RuntimeException("writing extracted lines to json failed", e);
         }
+    }
+
+    private void writeClassSourceTargetToJSON(List<MethodContainer> matchedMethodList, Path visualizationPath)
+    {
+
+        final List<GraphNodeLink> distinctLinksList = new ArrayList<>();
+
+        String sourceClass = null;
+        Long sourceDuration = 0L;
+
+        for (MethodContainer methodContainer : matchedMethodList)
+        {
+            if (sourceClass != null && !StringUtils.equals(sourceClass, methodContainer.getClassName()))
+            {
+                final GraphNodeLink graphNodeLink = new GraphNodeLink();
+                graphNodeLink.setSourceClass(sourceClass);
+                graphNodeLink.setSourceDuration(sourceDuration);
+                graphNodeLink.setTargetClass(methodContainer.getClassName());
+                graphNodeLink.setTargetDuration(methodContainer.getDuration());
+
+                distinctLinksList.add(graphNodeLink);
+            }
+
+            sourceClass = methodContainer.getClassName();
+            sourceDuration = methodContainer.getDuration();
+        }
+
+        try (FileWriter file = new FileWriter(visualizationPath.toFile()))
+        {
+            final JSONArray jsonClassContainerList = new JSONArray();
+
+            for (int i = 0; i < distinctLinksList.size(); i++)
+            {
+                final JSONObject jsonClassContainer = new JSONObject();
+                final GraphNodeLink currentNodeLink = distinctLinksList.get(i);
+
+                jsonClassContainer.put("id", i);
+                jsonClassContainer.put("source", currentNodeLink.getSourceClass());
+                jsonClassContainer.put("source_duration", currentNodeLink.getSourceDuration());
+                jsonClassContainer.put("target", currentNodeLink.getTargetClass());
+                jsonClassContainer.put("target_duration", currentNodeLink.getTargetDuration());
+
+                jsonClassContainerList.add(jsonClassContainer);
+            }
+
+            file.write(jsonClassContainerList.toJSONString());
+            file.flush();
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException("writing source target list to json failed", e);
+        }
 
     }
+
 }

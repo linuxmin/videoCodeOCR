@@ -156,13 +156,10 @@ public class ParsingServiceImpl implements ParsingService
 
         LOG.info("Writing matches to json");
 
-        fileService.writeMethodContainerListToJSON(pathContainer.getMethodMatchesPath(),
-            matchedMethodList,
-            HEADERS_MATCHED);
+        fileService.writeVisualizationDataToJSON(pathContainer,
+            matchedMethodList, totalDurationMethodList
+        );
 
-        fileService.writeMethodContainerListToJSON(pathContainer.getTotalDurationPath(),
-            totalDurationMethodList,
-            HEADERS_DURATION);
 
         LOG.info("Finished writing json");
 
@@ -179,7 +176,7 @@ public class ParsingServiceImpl implements ParsingService
                 {
                     final Map<String, List<String>> classMethodMap = new HashMap<>();
 
-                    classMethodMap.putIfAbsent(n.getFullyQualifiedName().orElse("dududu"), n.getMethods()
+                    classMethodMap.putIfAbsent(n.getFullyQualifiedName().orElse(null), n.getMethods()
                         .stream()
                         .map(methodDeclaration -> methodDeclaration.getDeclarationAsString(true, true, true))
                         .collect(
@@ -314,7 +311,6 @@ public class ParsingServiceImpl implements ParsingService
         extractedRawMethodContainerList.sort(Comparator.comparingLong(MethodContainer::getDuration));
 
         final List<MethodContainer> matchedMethodList = new ArrayList<>();
-        final Set<MethodContainer> setOfMethods = new HashSet<>();
         matchedClassesMethodMap.forEach(
             (matchedSourceCodeClass, containingSourceCodeMethods) -> containingSourceCodeMethods.forEach(
                 sourceCodeMethodName -> extractedRawMethodContainerList.forEach(extractedMethodContainer -> {
@@ -350,7 +346,6 @@ public class ParsingServiceImpl implements ParsingService
                                     matchedMethodContainer.setBoundingBox(extractedMethodContainer.getBoundingBox());
 
                                     matchedMethodList.add(matchedMethodContainer);
-                                    setOfMethods.add(matchedMethodContainer);
                                 }
                             }
                         }

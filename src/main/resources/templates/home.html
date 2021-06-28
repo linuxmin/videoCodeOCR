@@ -26,23 +26,25 @@
     <!-- Another example comes from here: http://exposedata.com/tutorial/chord/latest.html -->
     <style>
 
-        circle {
-            fill: rgb(31, 119, 180);
-            fill-opacity: .25;
-            stroke: rgb(31, 119, 180);
-            stroke-width: 1px;
+        path.link {
+            fill: none;
+            stroke: #666;
+            stroke-width: 1.5px;
+            stroke-opacity: .6;
+
         }
 
-        .leaf circle {
-            fill: #ff7f0e;
-            fill-opacity: 1;
+
+        circle {
+            stroke: #fff;
+            stroke-width: 1.5px;
         }
 
         text {
+            fill: blue;
             font: 10px sans-serif;
-            text-anchor: middle;
+            pointer-events: none;
         }
-
     </style>
     <meta charset="UTF-8">
     <title>Test</title>
@@ -73,9 +75,13 @@
     <svg></svg>
     </body>
 </div>
+<!--
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+-->
 <script type="text/javascript" th:src="@{d3v4.js}"></script>
 
-<script type="text/javascript" th:src="@{circlepacking.js}"></script>
+<script type="module" th:src="@{classRectangle.js}"></script>
+
 
 </body>
 </html>

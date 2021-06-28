@@ -8,6 +8,13 @@ import java.nio.file.Path;
 public class PathContainer
 {
 
+    private Path graphLinkPath;
+
+    public Path getGraphLinkPath()
+    {
+        return graphLinkPath;
+    }
+
     public static final class PathContainerBuilder
     {
         private Path videoPath;
@@ -16,6 +23,7 @@ public class PathContainer
         private Path extractedLinesPath;
         private Path methodMatchesPath;
         private Path totalDurationPath;
+        private Path graphLinkPath;
 
         public PathContainerBuilder()
         {
@@ -41,6 +49,12 @@ public class PathContainer
         public PathContainerBuilder visualizationPath(Path visualizationPath)
         {
             this.visualizationPath = visualizationPath;
+            return this;
+        }
+
+        public PathContainerBuilder graphLinkPath(Path graphLinkPath)
+        {
+            this.graphLinkPath = graphLinkPath;
             return this;
         }
 
@@ -84,6 +98,7 @@ public class PathContainer
         this.extractedLinesPath = pathContainerBuilder.extractedLinesPath;
         this.methodMatchesPath = pathContainerBuilder.methodMatchesPath;
         this.totalDurationPath = pathContainerBuilder.totalDurationPath;
+        this.graphLinkPath = pathContainerBuilder.graphLinkPath;
     }
 
     public Path getVideoPath()

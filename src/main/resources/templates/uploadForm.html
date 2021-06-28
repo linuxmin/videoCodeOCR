@@ -62,21 +62,29 @@
         </div>
 
         <div class="container">
-
             <div th:each="file : ${files}">
                 <form class="form-inline" th:action="@{/frame}" method="post">
-                        <a class="btn col-2" th:href="${file}"
-                           th:text="${new StringBuilder('Download ').append(file.getPath().substring(file.getPath().lastIndexOf('/') +1, file.getPath.lastIndexOf('.'))).toString()}"/>
-                        <input type="hidden" th:value="${file}" name="fileName"/>
-                        <input class="btn btn-success col-2" type="submit" value="Extract Frames" th:formaction="'/frame'">
-                        <input class="btn  btn-success col-2" type="submit" value="Perform OCR" th:formaction="'/ocr'">
-                        <input class="btn btn-success col-2" type="submit" value="Create Viz Data"
-                               th:formaction="'/classMethodJSON'">
-                        <input class="row col-2" type=file name="file">
-                        <input class="row col-2" type="submit" th:formenctype="'multipart/form-data'" th:formaction="'/pupil'" value="Upload Pupil Files"/></td>
+                    <a class="btn btn-primary col-2" th:href="${file}"
+                       th:text="${new StringBuilder('Download ').append(file.getPath().substring(file.getPath().lastIndexOf('/') +1, file.getPath.lastIndexOf('.'))).toString()}"/>
+                    <input type="hidden" th:value="${file}" name="fileName"/>
+                    <input class="btn btn-success col-2" type="submit" value="Extract Frames" th:formaction="'/frame'">
+                    <input class="btn  btn-success col-2" type="submit" value="Perform OCR" th:formaction="'/ocr'">
+                    <input class="btn btn-success col-2" type="submit" value="Create Viz Data"
+                           th:formaction="'/classMethodJSON'">
+                    <input class="row col-2 margin" type=file name="file">
+                    <input class="row col-2 margin" type="submit" th:formenctype="'multipart/form-data'"
+                           th:formaction="'/pupil'" value="Upload Pupil Files"/></td>
                 </form>
+
+                <div class="form-group blu-margin container ">
+                    <select class="form-control" th:field="${vizFiles}"  id="dropFile">
+                        <option value="0">Uploaded Viz Data Files:</option>
+                        <option th:each="vizFile: ${vizFiles}" th:if="${vizFile.getPath().toString().contains(file.getPath().substring(file.getPath().lastIndexOf('/') +1, file.getPath.lastIndexOf('.')))}" th:value="${vizFile}" th:text="${vizFile}"></option>
+                    </select>
+                </div>
                 <br/>
             </div>
+
         </div>
     </main>
 </div>

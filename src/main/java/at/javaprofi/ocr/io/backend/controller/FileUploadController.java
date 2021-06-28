@@ -3,7 +3,6 @@ package at.javaprofi.ocr.io.backend.controller;
 import java.net.MalformedURLException;
 import java.util.stream.Collectors;
 
-import org.apache.commons.csv.CSVParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +15,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
@@ -49,6 +47,11 @@ public class FileUploadController
                 "serveFile", path.getFileName().toString()).build())
             .collect(Collectors.toList()));
 
+        model.addAttribute("vizFiles", fileService.loadVisualizationPathsForVideo().stream().map(
+            path -> MvcUriComponentsBuilder.fromMethodName(FileUploadController.class,
+                "serveVizFile", path.toString()).build())
+            .collect(Collectors.toList()));
+
         return "uploadForm";
     }
 
@@ -59,7 +62,24 @@ public class FileUploadController
     {
         try
         {
-            Resource file = fileService.loadAsResource(filename);
+            Resource file = fileService.loadVideoAsResource(filename);
+
+            return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"" + file.getFilename() + "\"").body(file);
+        }
+        catch (MalformedURLException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @GetMapping("/vizFiles/{filename:.+}")
+    @ResponseBody
+    public ResponseEntity<Resource> serveVizFile(@PathVariable String filename)
+    {
+        try
+        {
+            Resource file = fileService.loadVizDataFileAsResource(filename);
 
             return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
                 "attachment; filename=\"" + file.getFilename() + "\"").body(file);
