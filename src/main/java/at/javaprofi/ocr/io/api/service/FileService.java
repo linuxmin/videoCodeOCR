@@ -8,8 +8,8 @@ import java.util.stream.Stream;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
-import at.javaprofi.ocr.frame.api.word.MethodContainer;
-import at.javaprofi.ocr.io.api.dao.PathContainer;
+import at.javaprofi.ocr.frame.api.dto.MethodContainer;
+import at.javaprofi.ocr.io.api.dto.PathContainer;
 
 public interface FileService
 {
@@ -55,7 +55,6 @@ public interface FileService
      * @throws MalformedURLException
      */
     Resource loadVideoAsResource(String fileName) throws MalformedURLException;
-
 
     /**
      * fetches the file found by the given file name as resource to be downloaded within the browser

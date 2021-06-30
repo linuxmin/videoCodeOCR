@@ -1,4 +1,4 @@
-package at.javaprofi.ocr.io.api.dao;
+package at.javaprofi.ocr.io.api.dto;
 
 import java.nio.file.Path;
 

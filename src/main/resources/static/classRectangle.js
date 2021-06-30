@@ -1,6 +1,3 @@
-import {select, selectAll} from "/d3-selection"
-
-
 // get the data
 d3.json("method_test.json", function (error, data) {
 
@@ -76,7 +73,7 @@ d3.json("method_test.json", function (error, data) {
         .on("tick", tick);
 
 
-    var svg = selectAll("svg")
+    var svg = d3.selectAll("svg")
         .attr("width", width)
         .attr("height", height);
 

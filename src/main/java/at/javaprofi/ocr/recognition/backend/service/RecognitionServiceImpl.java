@@ -19,8 +19,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import at.javaprofi.ocr.frame.api.word.WordContainer;
-import at.javaprofi.ocr.io.api.dao.PathContainer;
+import at.javaprofi.ocr.frame.api.dto.WordContainer;
+import at.javaprofi.ocr.io.api.dto.PathContainer;
 import at.javaprofi.ocr.io.api.service.FileService;
 import at.javaprofi.ocr.recognition.api.service.RecognitionService;
 import net.sourceforge.tess4j.ITessAPI;
@@ -56,13 +56,11 @@ public class RecognitionServiceImpl implements RecognitionService
         final List<WordContainer> wordContainerList = new ArrayList<>();
         final List<WordContainer> synchronizedWordContainerList = Collections.synchronizedList(wordContainerList);
 
-        final Stream<Path> parallelStream = pathStream.parallel();
-
         LOG.info("extracting lines of: {}", fileName);
 
         final AtomicLong frames = new AtomicLong(7850);
 
-        final Tesseract1 tesseractInstance = getTesseractInstance();
+        final Stream<Path> parallelStream = pathStream.parallel();
 
         parallelStream.forEach(framePath -> {
             final Tesseract1 tesseract1 = getTesseractInstance();

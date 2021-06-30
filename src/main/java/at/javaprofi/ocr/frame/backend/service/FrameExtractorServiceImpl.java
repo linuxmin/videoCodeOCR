@@ -21,7 +21,7 @@ import com.github.kokorin.jaffree.ffprobe.FFprobe;
 import com.github.kokorin.jaffree.ffprobe.FFprobeResult;
 
 import at.javaprofi.ocr.frame.api.service.FrameExtractorService;
-import at.javaprofi.ocr.io.api.dao.PathContainer;
+import at.javaprofi.ocr.io.api.dto.PathContainer;
 import at.javaprofi.ocr.io.api.service.FileService;
 
 @Service
@@ -70,7 +70,7 @@ public class FrameExtractorServiceImpl implements FrameExtractorService
 
         final AtomicLong duration = new AtomicLong();
 
-        //needed to get duration for word listener
+        //needed to get duration for dto listener
         FFmpeg.atPath()
             .addInput(UrlInput.fromPath(videoPath))
             .setOverwriteOutput(true)

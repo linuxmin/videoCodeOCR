@@ -1,4 +1,4 @@
-package at.javaprofi.ocr.parsing.api.dao;
+package at.javaprofi.ocr.parsing.api.dto;
 
 public class GraphNodeLink
 {

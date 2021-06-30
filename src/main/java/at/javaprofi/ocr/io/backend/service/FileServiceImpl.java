@@ -27,11 +27,11 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import at.javaprofi.ocr.frame.api.word.MethodContainer;
+import at.javaprofi.ocr.frame.api.dto.MethodContainer;
 import at.javaprofi.ocr.io.api.StorageProperties;
-import at.javaprofi.ocr.io.api.dao.PathContainer;
+import at.javaprofi.ocr.io.api.dto.PathContainer;
 import at.javaprofi.ocr.io.api.service.FileService;
-import at.javaprofi.ocr.parsing.api.dao.GraphNodeLink;
+import at.javaprofi.ocr.parsing.api.dto.GraphNodeLink;
 
 @Service
 public class FileServiceImpl implements FileService

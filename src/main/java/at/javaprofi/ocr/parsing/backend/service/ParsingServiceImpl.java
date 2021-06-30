@@ -35,8 +35,8 @@ import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
 import com.github.javaparser.symbolsolver.utils.SymbolSolverCollectionStrategy;
 import com.github.javaparser.utils.ProjectRoot;
 
-import at.javaprofi.ocr.frame.api.word.MethodContainer;
-import at.javaprofi.ocr.io.api.dao.PathContainer;
+import at.javaprofi.ocr.frame.api.dto.MethodContainer;
+import at.javaprofi.ocr.io.api.dto.PathContainer;
 import at.javaprofi.ocr.io.api.service.FileService;
 import at.javaprofi.ocr.parsing.api.service.ParsingService;
 
