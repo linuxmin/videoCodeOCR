@@ -19,7 +19,7 @@ public class EditorTraceToJsonTest
     public void readFileAndWriteToJson()
     {
         final String userRunDir = System.getProperties().getProperty("user.dir");
-        final String pathToFile = userRunDir + "/src/test/resources/trace_editor_p0.txt";
+        final String pathToFile = userRunDir + "/src/test/resources/trace_editor.txt";
         final String pathToWrite = userRunDir + "/src/test/resources/";
 
         try

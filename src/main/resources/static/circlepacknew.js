@@ -40,13 +40,7 @@ function loadIt(error, data) {
 // inner force layouts
     // var innerData = [{"id": "A1"}, {"id": "A2"}];
 
-    var innerAnodes;
 
-    function innerTick(e) {
-        innerAnodes.attr("transform", function (d) {
-            return "translate(" + (d.x - 20) + "," + (d.y - 20) + ")";
-        });
-    }
 
     outerData.forEach(function (outerNode) {
         var innerData = outerNode.inner_nodes;
@@ -56,12 +50,16 @@ function loadIt(error, data) {
             .gravity(0.75)
             .links([])
             .nodes(innerData)
-            .on("tick", innerTick)
+            .on("tick", e => {
+                innerAnodes.attr("transform", function (d) {
+                    return "translate(" + (d.x - 20) + "," + (d.y - 20) + ")";
+                });
+            })
             .start();
 
         var aNode = svg.select("g.outer#" + outerNode.id);
 
-        innerAnodes = aNode.selectAll("g.inner")
+        var innerAnodes = aNode.selectAll("g.inner")
             .data(innerData, function (d) {
                 return d.id;
             })

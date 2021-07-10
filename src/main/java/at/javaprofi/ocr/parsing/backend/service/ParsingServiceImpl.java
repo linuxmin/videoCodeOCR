@@ -160,7 +160,6 @@ public class ParsingServiceImpl implements ParsingService
             matchedMethodList, totalDurationMethodList
         );
 
-
         LOG.info("Finished writing json");
 
     }
@@ -188,7 +187,7 @@ public class ParsingServiceImpl implements ParsingService
 
         LOG.info("Reading and parsing java source code from ground truth");
 
-        final Path pathToProjectRoot = Paths.get("../sales-app");
+        final Path pathToProjectRoot = Paths.get("../microservice-sales-app");
         final ProjectRoot projectRoot = new SymbolSolverCollectionStrategy().collect(pathToProjectRoot);
 
         final Map<String, List<String>> parsedMethodNamesPerClass = new HashMap<>();
