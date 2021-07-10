@@ -6,21 +6,33 @@ var svg = d3.select("body").append("svg")
     .attr("height", 300);
 
 function loadIt(error, data) {
-    var outerData = data.nodes;
+
+    var outerLinks = data.links;
+
+    var outerNodes = data.nodes;
+
+    var link = svg.append("g")
+        .attr("class", "links")
+        .selectAll("line")
+        .data(outerLinks)
+        .enter().append("line")
+        .attr("stroke-width", function (d) {
+            return Math.sqrt(d.value);
+        });
 
     var outerLayout = d3.layout.force()
         .size([300, 300])
         .charge(-4000)
         .gravity(0.85)
-        .links([])
-        .nodes(outerData)
+        .nodes(data.nodes)
+        .links(data.links)
         .on("tick", outerTick)
         .start();
 
 
-    var outerNodes = svg.selectAll("g.outer")
-        .data(outerData, function (d) {
-            return d.id;
+    var outerNodes2 = svg.selectAll("g.outer")
+        .data(outerNodes, function (d) {
+            return d.numb;
         })
         .enter()
         .append("g")
@@ -30,19 +42,14 @@ function loadIt(error, data) {
         })
         .call(outerLayout.drag());
 
-    outerNodes
+    outerNodes2
         .append("circle")
         .style("fill", "pink")
         .style("stroke", "blue")
         .attr("r", 40);
 
-////////////////////////
-// inner force layouts
-    // var innerData = [{"id": "A1"}, {"id": "A2"}];
 
-
-
-    outerData.forEach(function (outerNode) {
+    outerNodes.forEach(function (outerNode) {
         var innerData = outerNode.inner_nodes;
         var innerLayout = d3.layout.force()
             .size([40, 40])
@@ -82,58 +89,22 @@ function loadIt(error, data) {
             .attr("r", 6);
     })
 
-
-///////
-
-    /*
-        var innerBdata = [{"id": "B1"}, {"id": "B2"}];
-
-        var innerBlayout = d3.layout.force()
-            .size([40, 40])
-            .charge(-600)
-            .gravity(0.75)
-            .links([])
-            .nodes(innerBdata)
-            .on("tick", innerBtick)
-            .start();
-
-        var bNode = svg.select("g.outer#B");
-
-        var innerBnodes = bNode.selectAll("g.inner")
-            .data(innerBdata, function (d) {
-                return d.id;
-            })
-            .enter()
-            .append("g")
-            .attr("class", "inner")
-            .attr("id", function (d) {
-                return d.id;
-            })
-            .call(innerBlayout.drag()
-                .on("dragstart", function () {
-                    d3.event.sourceEvent.stopPropagation();
-                })
-            );
-
-        innerBnodes
-            .append("circle")
-            .style("fill", "orange")
-            .style("stroke", "blue")
-            .attr("r", 6);
-    */
-
-    //////////////////////////
-    // functions
-
     function outerTick(e) {
-        outerNodes.attr("transform", function (d) {
+        link
+            .attr("x1", function (d) {
+                return d.source.x;
+            })
+            .attr("y1", function (d) {
+                return d.source.y;
+            })
+            .attr("x2", function (d) {
+                return d.target.x;
+            })
+            .attr("y2", function (d) {
+                return d.target.y;
+            });
+        outerNodes2.attr("transform", function (d) {
             return "translate(" + d.x + "," + d.y + ")";
-        });
-    }
-
-    function innerBtick(e) {
-        innerBnodes.attr("transform", function (d) {
-            return "translate(" + (d.x - 20) + "," + (d.y - 20) + ")";
         });
     }
 
