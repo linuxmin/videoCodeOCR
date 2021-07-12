@@ -57,31 +57,20 @@ function buildGraphNodesAndLinks(nodes, links) {
     })
 }
 
+// Zoom functions
 
 function buildOuterLayout(outerNodes, outerLinks) {
+
+
     var outerLayout = d3.layout.force()
         .size([width, height])
         .charge(-80000)
         .gravity(0.85)
         .nodes(outerNodes)
         .links(outerLinks)
-        .on("tick", () => {
-            outerPath.attr("d", function (d) {
-                var dx = d.target.x - d.source.x,
-                    dy = d.target.y - d.source.y,
-                    dr = Math.sqrt(dx * dx + dy * dy);
-                return "M" +
-                    d.source.x + "," +
-                    d.source.y + "A" +
-                    dr + "," + dr + " 0 0,1 " +
-                    d.target.x + "," +
-                    d.target.y;
-            });
-            outerNodesSelect.attr("transform", function (d) {
-                return "translate(" + d.x + "," + d.y + ")";
-            });
-        })
+        .on("tick", outerTick)
         .start();
+
 
     var outerPath = svg.append("svg:g").selectAll("path")
         .data(outerLayout.links())
@@ -107,6 +96,31 @@ function buildOuterLayout(outerNodes, outerLinks) {
         .style("fill", "pink")
         .style("stroke", "blue")
         .attr("r", 80);
+
+    var outerLables = outerNodesSelect.append("text")
+        .attr("class", "outerText")
+        .attr("dy", "-4.80em")
+        .attr("dx", "-6.80em")
+        .text(function (d) {
+            return d.name;
+        });
+
+    function outerTick() {
+        outerPath.attr("d", function (d) {
+            var dx = d.target.x - d.source.x,
+                dy = d.target.y - d.source.y,
+                dr = Math.sqrt(dx * dx + dy * dy);
+            return "M" +
+                d.source.x + "," +
+                d.source.y + "A" +
+                dr + "," + dr + " 0 0,1 " +
+                d.target.x + "," +
+                d.target.y;
+        });
+        outerNodesSelect.attr("transform", function (d) {
+            return "translate(" + d.x + "," + d.y + ")";
+        });
+    }
 }
 
 function buildInnerLayout(outerNode, innerNodes, innerLinks) {
@@ -165,6 +179,13 @@ function buildInnerLayout(outerNode, innerNodes, innerLinks) {
             d3.event.sourceEvent.stopPropagation();
         })
     );
+    var innerLables = innerNodesSelect.append("text")
+        .attr("class", "innerText")
+        .attr("dy", "-1.80em")
+        .attr("dx", "-0.80em")
+        .text(function (d) {
+            return d.name;
+        });
 }
 
 function createPathMarkers() {

@@ -38,10 +38,33 @@
             stroke-width: 1.5px;
         }
 
-        text {
+
+        .outer .outerText {
+            display: none;
+            font: 8px sans-serif;
+        }
+
+        .outer .innerText {
+            display: none;
+            font: 8px sans-serif;
+        }
+
+        .outer:hover circle {
             fill: #000;
-            font: 10px sans-serif;
-            pointer-events: none;
+        }
+
+        .outer:hover .outerText {
+            display: inline;
+        }
+
+
+        .inner:hover .innerText {
+            display: inline;
+        }
+
+        .cell {
+            fill: none;
+            pointer-events: all;
         }
     </style>
     <meta charset="UTF-8">
