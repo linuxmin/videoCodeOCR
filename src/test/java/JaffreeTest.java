@@ -29,7 +29,7 @@ public class JaffreeTest
                 .fromPath(pathToSrc)
             )
             .addOutput(FrameOutput
-                .withConsumer(new VideoFrameConsumer(pathToDstDir, new AtomicLong()))
+                .withConsumer(new VideoFrameConsumer(pathToDstDir, new AtomicLong(), null))
                 // No more then 100 frames
                 .setFrameCount(StreamType.VIDEO, 100L)
                 // 20 frame every quarter second

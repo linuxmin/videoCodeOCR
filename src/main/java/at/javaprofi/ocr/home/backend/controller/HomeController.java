@@ -26,8 +26,13 @@ public class HomeController
     }
 
     @GetMapping("/home")
-    public String showHome()
+    public String showHome(Model model)
     {
+        model.addAttribute("files", fileService.loadVideos().map(
+                path -> MvcUriComponentsBuilder.fromMethodName(FileUploadController.class,
+                    "serveFile", path.getFileName().toString()).build())
+            .collect(Collectors.toList()));
+
         return "home";
     }
 

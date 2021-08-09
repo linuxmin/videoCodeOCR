@@ -101,11 +101,14 @@
     <body>
 
     <div class="form-group blu-margin">
-        <select class="form-control" th:field="${files}"  id="selectVideo">
+        <select class="form-control" th:field="${files}" id="selectVideo">
             <option value="0">select video</option>
-            <option th:each="file : ${files}" th:value="${file.getPath().substring(file.getPath().lastIndexOf('/') +1, file.getPath.lastIndexOf('.'))}" th:text="${file.getPath().substring(file.getPath().lastIndexOf('/') +1, file.getPath.lastIndexOf('.'))}"></option>
+            <option th:each="file : ${files}"
+                    th:value="${file.getPath().substring(file.getPath().lastIndexOf('/') +1, file.getPath.lastIndexOf('.'))}"
+                    th:text="${file.getPath().substring(file.getPath().lastIndexOf('/') +1, file.getPath.lastIndexOf('.'))}"></option>
         </select>
-        <button id="vizButton" onclick="visualizeInput($('#selectVideo option:selected' ).text())"/>
+        <button id="vizButton" onclick="visualizeInput($('#selectVideo option:selected' ).text())">Load</button>
+
     </div>
 
     <div id="vis">

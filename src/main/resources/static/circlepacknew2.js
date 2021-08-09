@@ -13,11 +13,6 @@ var svg = d3.select("body").append("svg")
     .attr("width", width)
     .attr("height", height);
 
-var thevariable = d3.text("ex1.dot", function (error, data) {
-    console.log(data);
-});
-
-
 function loadIt(error, data) {
 
     var outerNodes = data.nodes

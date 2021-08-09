@@ -1,5 +1,6 @@
 package at.javaprofi.ocr.frame.backend.service;
 
+import java.awt.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Path;
@@ -17,8 +18,6 @@ import com.github.kokorin.jaffree.ffmpeg.FFmpeg;
 import com.github.kokorin.jaffree.ffmpeg.FrameOutput;
 import com.github.kokorin.jaffree.ffmpeg.NullOutput;
 import com.github.kokorin.jaffree.ffmpeg.UrlInput;
-import com.github.kokorin.jaffree.ffprobe.FFprobe;
-import com.github.kokorin.jaffree.ffprobe.FFprobeResult;
 
 import at.javaprofi.ocr.frame.api.service.FrameExtractorService;
 import at.javaprofi.ocr.io.api.dto.PathContainer;
@@ -40,7 +39,7 @@ public class FrameExtractorServiceImpl implements FrameExtractorService
     }
 
     @Override
-    public void extractFrames(String fileName)
+    public void extractFrames(String fileName, Rectangle boundingBox)
     {
         if (VIDEO_FILTER.stream().noneMatch(fileName::endsWith))
         {
@@ -55,18 +54,14 @@ public class FrameExtractorServiceImpl implements FrameExtractorService
         final long startTime = System.currentTimeMillis();
         LOG.info("Started operation at: {}", startTime);
 
-        countFramesAndExtractAsyncToFramePath(pathContainer, frameCounter);
+        countFramesAndExtractAsyncToFramePath(pathContainer, frameCounter, boundingBox);
     }
 
-    private void countFramesAndExtractAsyncToFramePath(PathContainer pathContainer, AtomicLong frameCount)
+    private void countFramesAndExtractAsyncToFramePath(PathContainer pathContainer, AtomicLong frameCount,
+        Rectangle boundingBox)
     {
         final Path videoPath = pathContainer.getVideoPath();
         final Path framesPath = pathContainer.getFramesPath();
-
-        FFprobeResult result = FFprobe.atPath()
-            .setShowStreams(true).setSelectStreams(StreamType.VIDEO).setCountFrames(true)
-            .setInput(videoPath)
-            .execute();
 
         final AtomicLong duration = new AtomicLong();
 
@@ -79,15 +74,11 @@ public class FrameExtractorServiceImpl implements FrameExtractorService
                 duration.set(progress.getTimeMillis());
             }).execute();
 
-        final int nbFrames = result.getStreams().get(0).getNbFrames();
-
-        frameCount.set(nbFrames);
-
         AtomicLong currentTimeMillis = new AtomicLong();
 
         FFmpeg.atPath()
             .addInput(UrlInput
-                .fromPath(videoPath))
+                .fromPath(videoPath)).setFilter(StreamType.VIDEO, "negate")
             .setProgressListener(progress -> {
                 frameCount.set(progress.getFrame());
                 currentTimeMillis.set(progress.getTimeMillis());
@@ -96,11 +87,11 @@ public class FrameExtractorServiceImpl implements FrameExtractorService
                 LOG.info("Frame extraction progress:y {} %", percentage);
             })
             .addOutput(FrameOutput
-                .withConsumer(new VideoFrameConsumer(framesPath, frameCount))
+                .withConsumer(new VideoFrameConsumer(framesPath, frameCount, boundingBox))
                 .setFrameRate(60)
                 .disableStream(StreamType.AUDIO)
                 .disableStream(StreamType.SUBTITLE)
                 .disableStream(StreamType.DATA))
-            .executeAsync();
+            .execute();
     }
 }

@@ -1,5 +1,7 @@
 package at.javaprofi.ocr.frame.backend.controller;
 
+import java.awt.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,21 +39,21 @@ public class CodeExtractorController
     @RequestMapping(value = "/frame")
     public String handleFrameExtraction(@RequestParam String fileName)
     {
-        frameExtractorService.extractFrames(fileName);
+        frameExtractorService.extractFrames(fileName, new Rectangle(422, 90, 532, 755));
         return "redirect:/upload";
     }
 
     @RequestMapping(value = "/ocr")
     public String handlePerformOCR(@RequestParam String fileName)
     {
-        recognitionService.extractTextFromFramesToJSON(fileName);
-        return "redirect:/video";
+        recognitionService.extractTextFromFramesToJSON(fileName, true, "standard");
+        return "redirect:/upload";
     }
 
     @RequestMapping(value = "/visualize")
     public String handleVisualization(@RequestParam String fileName)
     {
-        recognitionService.extractTextFromFramesToJSON(fileName);
+        recognitionService.extractTextFromFramesToJSON(fileName, false, "standard");
         return "redirect:/video";
     }
 
