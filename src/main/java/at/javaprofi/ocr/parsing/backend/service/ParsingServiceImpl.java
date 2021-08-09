@@ -218,13 +218,14 @@ public class ParsingServiceImpl implements ParsingService
 
         final Map<String, List<String>> matchedClassesMethodMap = new HashMap<>();
 
-        final List<String> visitedClasses = readVisitedClassesFromEditorTraceFiles();
+        final List<Pair<String, String>> visitedClasses = readVisitedClassesFromEditorTraceFiles();
 
         parsedMethodNamesPerClass.forEach((className, methodNames) ->
             methodNames.forEach(methodName ->
-                visitedClasses.forEach(visitedClass ->
+                visitedClasses.forEach(visitedModuleClass ->
                 {
-                    if (StringUtils.contains(className, visitedClass))
+                    if (StringUtils.contains(className, visitedModuleClass.getRight()) && StringUtils.contains(
+                        className, visitedModuleClass.getLeft()))
                     {
                         matchedClassesMethodMap.putIfAbsent(className, parsedMethodNamesPerClass.get(className));
                     }
@@ -347,6 +348,7 @@ public class ParsingServiceImpl implements ParsingService
                                     matchedMethodList.add(matchedMethodContainer);
                                 }
                             }
+
                         }
                     }
                 })));
@@ -354,12 +356,12 @@ public class ParsingServiceImpl implements ParsingService
         return matchedMethodList;
     }
 
-    private List<String> readVisitedClassesFromEditorTraceFiles()
+    private List<Pair<String, String>> readVisitedClassesFromEditorTraceFiles()
     {
         final String userRunDir = System.getProperties().getProperty("user.dir");
         final String pathToWrite = userRunDir + "/src/test/resources/";
-        JSONParser jsonParser = new JSONParser();
-        final List<String> visitedJavaClasses = new ArrayList<>();
+        final JSONParser jsonParser = new JSONParser();
+        final List<Pair<String, String>> visitedJavaClasses = new ArrayList<>();
 
         try (Stream<Path> pathsOfFiles = Files.walk(Paths.get(pathToWrite), 1))
         {
@@ -374,7 +376,10 @@ public class ParsingServiceImpl implements ParsingService
                         if (StringUtils.containsIgnoreCase(fullFileName, ".java"))
                         {
                             final String javaClassFile = StringUtils.substringBefore(fileName, ".java");
-                            visitedJavaClasses.add(javaClassFile);
+                            final String moduleName = StringUtils.replaceChars(
+                                StringUtils.substringBetween(fullFileName, "project\\", "\\src"), '-', '.');
+                            System.out.println("Modul: " + moduleName + " Class: " + javaClassFile);
+                            visitedJavaClasses.add(Pair.of(moduleName, javaClassFile));
                         }
                     }
 
