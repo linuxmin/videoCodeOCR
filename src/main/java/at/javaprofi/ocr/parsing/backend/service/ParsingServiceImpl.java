@@ -1,6 +1,7 @@
 package at.javaprofi.ocr.parsing.backend.service;
 
 import java.awt.*;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -39,6 +40,13 @@ import at.javaprofi.ocr.frame.api.dto.MethodContainer;
 import at.javaprofi.ocr.io.api.dto.PathContainer;
 import at.javaprofi.ocr.io.api.service.FileService;
 import at.javaprofi.ocr.parsing.api.service.ParsingService;
+import guru.nidi.graphviz.attribute.Color;
+import guru.nidi.graphviz.engine.Format;
+import guru.nidi.graphviz.engine.Graphviz;
+import guru.nidi.graphviz.engine.GraphvizJdkEngine;
+import guru.nidi.graphviz.model.Factory;
+import guru.nidi.graphviz.model.MutableGraph;
+import guru.nidi.graphviz.model.MutableNode;
 
 @Service
 public class ParsingServiceImpl implements ParsingService
@@ -151,6 +159,8 @@ public class ParsingServiceImpl implements ParsingService
         final List<MethodContainer> matchedMethodList =
             calculateMatchingSourceMethodsOfClassCandidates(extractedRawMethodContainerList, matchedClassesMethodMap);
 
+        createGraphVizDotFileFromMatchingMethods(matchedMethodList);
+
         final List<MethodContainer> totalDurationMethodList =
             calculateTotalVisibilityDurationPerMatchedMethod(matchedMethodList);
 
@@ -162,6 +172,66 @@ public class ParsingServiceImpl implements ParsingService
 
         LOG.info("Finished writing json");
 
+    }
+
+    private void createGraphVizDotFileFromMatchingMethods(List<MethodContainer> matchedMethodList)
+    {
+        Graphviz.useEngine(new GraphvizJdkEngine());
+        /*
+            digraph example1 {
+               b
+               node[color=red]
+               a -> b
+           }
+        */
+        final MutableGraph mutableGraph = Factory.mutGraph("example1").setDirected(true).use((gr, ctx) -> {
+            for (int i = 1; i < matchedMethodList.size(); i++)
+            {
+                final MethodContainer sourceContainer = matchedMethodList.get(i - 1);
+                final MethodContainer targetContainer = matchedMethodList.get(i);
+
+                if (sourceContainer.getDuration().compareTo(targetContainer.getDuration()) != 0 && !StringUtils.equals(
+                    sourceContainer.getClassName(), targetContainer.getClassName()))
+                {
+                    createNode(targetContainer);
+                    Factory.nodeAttrs().add(Color.RED);
+                    createNode(sourceContainer).addLink(createNode(targetContainer));
+                }
+
+            }
+        });
+
+        final MutableGraph simpleGraph = Factory.mutGraph("simple").setDirected(true).use((gr, ctx) -> {
+            for (int i = 0; i < 3; i++)
+            {
+                Factory.mutNode("Node " + i);
+                Factory.nodeAttrs().add(Color.RED);
+                Factory.mutNode("Node " + (i - 1)).addLink(Factory.mutNode("Node " + i));
+            }
+        });
+        try
+        {
+            Graphviz.fromGraph(mutableGraph)
+                .width(1400)
+                .render(Format.PNG)
+                .toFile(new File("example/traceEdited1.png"));
+            Graphviz.fromGraph(mutableGraph).render(Format.DOT).toFile(new File("example/traceEdited1.dot"));
+
+           /* Graphviz.fromGraph(simpleGraph)
+                .width(1400)
+                .render(Format.PNG)
+                .toFile(new File("example/simple.png"));
+            Graphviz.fromGraph(simpleGraph).render(Format.DOT).toFile(new File("example/simple.dot"));*/
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    private MutableNode createNode(MethodContainer methodContainer)
+    {
+        return Factory.mutNode(methodContainer.getClassName());
     }
 
     private Map<String, List<String>> parseCodeFromGroundTruthAndBuildMapWithMatchingClassCandidates()
