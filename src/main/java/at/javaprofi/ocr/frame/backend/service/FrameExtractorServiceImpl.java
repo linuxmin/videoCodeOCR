@@ -87,7 +87,7 @@ public class FrameExtractorServiceImpl implements FrameExtractorService
                 LOG.info("Frame extraction progress:y {} %", percentage);
             })
             .addOutput(FrameOutput
-                .withConsumer(new VideoFrameConsumer(framesPath, frameCount, boundingBox))
+                .withConsumer(new VideoFrameConsumer(framesPath, currentTimeMillis, boundingBox))
                 .setFrameRate(60)
                 .disableStream(StreamType.AUDIO)
                 .disableStream(StreamType.SUBTITLE)

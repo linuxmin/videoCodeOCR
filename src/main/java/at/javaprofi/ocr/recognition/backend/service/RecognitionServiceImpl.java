@@ -69,7 +69,10 @@ public class RecognitionServiceImpl implements RecognitionService
             try
             {
                 longAdder.decrement();
-                LOG.info("extracted text from {} frames of {}", longAdder.sum(), count);
+                if (longAdder.sum() % 10 == 0)
+                {
+                    LOG.info("extracted text from {} frames of {}", longAdder.sum(), count);
+                }
                 wordContainerList.add(retrieveWordContainerForFrame(tesseract1, framePath.toFile()));
 
             }
@@ -132,13 +135,11 @@ public class RecognitionServiceImpl implements RecognitionService
     {
         final OCRResult documentsWithResults;
         final String absoluteFileString = frameFile.getAbsoluteFile().toString();
-
+        final String duration = StringUtils.getDigits(frameFile.getName());
         documentsWithResults =
             tesseract1.createDocumentsWithResults(absoluteFileString, absoluteFileString,
                 Collections.singletonList(ITesseract.RenderedFormat.HOCR),
                 ITessAPI.TessPageIteratorLevel.RIL_TEXTLINE);
-
-        final String duration = StringUtils.getDigits(absoluteFileString);
 
         final WordContainer wordContainer = new WordContainer();
         if (StringUtils.isNoneBlank(duration))

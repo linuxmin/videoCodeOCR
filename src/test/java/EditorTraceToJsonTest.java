@@ -28,10 +28,12 @@ public class EditorTraceToJsonTest
 
             for (String line : strings)
             {
-                final String timeStamp = StringUtils.substringBefore(line, "{");
-                final String jsonToWrite = StringUtils.substringAfter(line, timeStamp);
+                final String timeStamp = StringUtils.substringBefore(line, ":");
+                final String jsonToWrite = StringUtils.substringAfter(line, ":");
                 JSONParser jsonParser = new JSONParser();
                 JSONObject jsonObject = (JSONObject) jsonParser.parse(jsonToWrite);
+
+                jsonObject.put("opened", timeStamp);
                 final String s = jsonObject.toJSONString();
                 System.out.println(s);
                 final BufferedWriter fileWriter = Files.newBufferedWriter(Paths.get(pathToWrite, timeStamp + ".json"));

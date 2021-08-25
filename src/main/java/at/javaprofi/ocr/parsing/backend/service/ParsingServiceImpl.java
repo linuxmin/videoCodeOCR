@@ -36,11 +36,12 @@ import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
 import com.github.javaparser.symbolsolver.utils.SymbolSolverCollectionStrategy;
 import com.github.javaparser.utils.ProjectRoot;
 
+import at.javaprofi.ocr.frame.api.dto.ClassContainer;
 import at.javaprofi.ocr.frame.api.dto.MethodContainer;
 import at.javaprofi.ocr.io.api.dto.PathContainer;
 import at.javaprofi.ocr.io.api.service.FileService;
 import at.javaprofi.ocr.parsing.api.service.ParsingService;
-import guru.nidi.graphviz.attribute.Color;
+import guru.nidi.graphviz.attribute.Shape;
 import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
 import guru.nidi.graphviz.engine.GraphvizJdkEngine;
@@ -153,11 +154,12 @@ public class ParsingServiceImpl implements ParsingService
     private void parseCodeFromSourceCodeAndMapMatchingMethodsAndWriteResultsToJSONFiles(PathContainer pathContainer,
         List<MethodContainer> extractedRawMethodContainerList)
     {
-        final Map<String, List<String>> matchedClassesMethodMap =
+
+        final List<ClassContainer> visitedClassContainerList =
             parseCodeFromGroundTruthAndBuildMapWithMatchingClassCandidates();
 
         final List<MethodContainer> matchedMethodList =
-            calculateMatchingSourceMethodsOfClassCandidates(extractedRawMethodContainerList, matchedClassesMethodMap);
+            calculateMatchingSourceMethodsOfClassCandidates(extractedRawMethodContainerList, visitedClassContainerList);
 
         createGraphVizDotFileFromMatchingMethods(matchedMethodList);
 
@@ -174,6 +176,7 @@ public class ParsingServiceImpl implements ParsingService
 
     }
 
+    //TODO eventuell einfach PlantUML String
     private void createGraphVizDotFileFromMatchingMethods(List<MethodContainer> matchedMethodList)
     {
         Graphviz.useEngine(new GraphvizJdkEngine());
@@ -193,22 +196,21 @@ public class ParsingServiceImpl implements ParsingService
                 if (sourceContainer.getDuration().compareTo(targetContainer.getDuration()) != 0 && !StringUtils.equals(
                     sourceContainer.getClassName(), targetContainer.getClassName()))
                 {
-                    createNode(targetContainer);
-                    Factory.nodeAttrs().add(Color.RED);
-                    createNode(sourceContainer).addLink(createNode(targetContainer));
+                    final MutableNode targetNode = createNode(targetContainer);
+                    targetNode.attrs().add(Shape.COMPONENT);
+                    final MutableNode sourceNode = createNode(sourceContainer);
+                    sourceNode.attrs().add(Shape.COMPONENT).addLink(createNode(targetContainer));
+
+                    final MutableGraph mutableGraph2 =
+                        Factory.mutGraph("example1").setDirected(true).use((gr2, ctx2) -> {
+                            createMethodNode(sourceContainer);
+                        });
+
+                    mutableGraph2.addTo(gr);
                 }
-
             }
         });
 
-        final MutableGraph simpleGraph = Factory.mutGraph("simple").setDirected(true).use((gr, ctx) -> {
-            for (int i = 0; i < 3; i++)
-            {
-                Factory.mutNode("Node " + i);
-                Factory.nodeAttrs().add(Color.RED);
-                Factory.mutNode("Node " + (i - 1)).addLink(Factory.mutNode("Node " + i));
-            }
-        });
         try
         {
             Graphviz.fromGraph(mutableGraph)
@@ -234,7 +236,12 @@ public class ParsingServiceImpl implements ParsingService
         return Factory.mutNode(methodContainer.getClassName());
     }
 
-    private Map<String, List<String>> parseCodeFromGroundTruthAndBuildMapWithMatchingClassCandidates()
+    private MutableNode createMethodNode(MethodContainer methodContainer)
+    {
+        return Factory.mutNode(methodContainer.getMethodName());
+    }
+
+    private List<ClassContainer> parseCodeFromGroundTruthAndBuildMapWithMatchingClassCandidates()
     {
 
         final GenericVisitorAdapter<Map<String, List<String>>, Object> genericVisitorAdapter =
@@ -243,8 +250,10 @@ public class ParsingServiceImpl implements ParsingService
                 @Override
                 public Map<String, List<String>> visit(ClassOrInterfaceDeclaration n, Object arg)
                 {
+                    final String nameAsString =
+                        n.findCompilationUnit().get().getPackageDeclaration().get().getNameAsString();
                     final Map<String, List<String>> classMethodMap = new HashMap<>();
-
+                    System.out.println(nameAsString);
                     classMethodMap.putIfAbsent(n.getFullyQualifiedName().orElse(null), n.getMethods()
                         .stream()
                         .map(methodDeclaration -> methodDeclaration.getDeclarationAsString(true, true, true))
@@ -288,20 +297,19 @@ public class ParsingServiceImpl implements ParsingService
 
         final Map<String, List<String>> matchedClassesMethodMap = new HashMap<>();
 
-        final List<Pair<String, String>> visitedClasses = readVisitedClassesFromEditorTraceFiles();
+        final List<ClassContainer> visitedClasses = readVisitedClassesFromEditorTraceFiles();
 
         parsedMethodNamesPerClass.forEach((className, methodNames) ->
             methodNames.forEach(methodName ->
-                visitedClasses.forEach(visitedModuleClass ->
+                visitedClasses.forEach(classContainer ->
                 {
-                    if (StringUtils.contains(className, visitedModuleClass.getRight()) && StringUtils.contains(
-                        className, visitedModuleClass.getLeft()))
+                    if (StringUtils.equals(className, classContainer.getClassName()))
                     {
-                        matchedClassesMethodMap.putIfAbsent(className, parsedMethodNamesPerClass.get(className));
+                        classContainer.setMethodList(parsedMethodNamesPerClass.get(className));
                     }
                 })));
 
-        return matchedClassesMethodMap;
+        return visitedClasses;
     }
 
     private List<MethodContainer> calculateTotalVisibilityDurationPerMatchedMethod(
@@ -372,7 +380,7 @@ public class ParsingServiceImpl implements ParsingService
 
     private List<MethodContainer> calculateMatchingSourceMethodsOfClassCandidates(
         List<MethodContainer> extractedRawMethodContainerList,
-        Map<String, List<String>> matchedClassesMethodMap)
+        List<ClassContainer> matchedClassContainer)
     {
 
         LOG.info(
@@ -381,9 +389,12 @@ public class ParsingServiceImpl implements ParsingService
         extractedRawMethodContainerList.sort(Comparator.comparingLong(MethodContainer::getDuration));
 
         final List<MethodContainer> matchedMethodList = new ArrayList<>();
-        matchedClassesMethodMap.forEach(
-            (matchedSourceCodeClass, containingSourceCodeMethods) -> containingSourceCodeMethods.forEach(
-                sourceCodeMethodName -> extractedRawMethodContainerList.forEach(extractedMethodContainer -> {
+        for (ClassContainer classContainer : matchedClassContainer)
+        {
+            for (String sourceCodeMethodName : classContainer.getMethodList())
+            {
+                for (MethodContainer extractedMethodContainer : extractedRawMethodContainerList)
+                {
                     final String extractedLine = extractedMethodContainer.getExtractedLine();
                     if (StringUtils.isNotEmpty(extractedLine))
                     {
@@ -395,43 +406,53 @@ public class ParsingServiceImpl implements ParsingService
                         final String sourceCodeMethodShort = StringUtils.substringBefore(sourceCodeMethodName, "(");
                         final String possibleMethodName =
                             StringUtils.substringBefore(extractedLineWithoutLineNumber, "(");
+                        final Long openedFrom = classContainer.getOpenedFrom();
+                        final Long closedAt = classContainer.getClosedAt();
+
+                        final Long extractedDuration = extractedMethodContainer.getDuration();
+
                         if (StringUtils.containsIgnoreCase(possibleMethodName, sourceCodeMethodShort))
-                        {
-                            final JaccardSimilarity jaccardSimilarity = new JaccardSimilarity();
-                            final Double calculatedJaccardSimilarity =
-                                jaccardSimilarity.apply(sourceCodeMethodShort, possibleMethodName);
-
-                            if (calculatedJaccardSimilarity != null && calculatedJaccardSimilarity > 0.96)
+                            if ((extractedDuration >= openedFrom) && (extractedDuration <= closedAt))
                             {
-                                final JaroWinklerSimilarity jaroWinklerSimilarity = new JaroWinklerSimilarity();
-                                final Double calculatedJaroWinklerSimilarity =
-                                    jaroWinklerSimilarity.apply(sourceCodeMethodShort, possibleMethodName);
+                                final JaccardSimilarity jaccardSimilarity = new JaccardSimilarity();
+                                final Double calculatedJaccardSimilarity =
+                                    jaccardSimilarity.apply(sourceCodeMethodShort, possibleMethodName);
 
-                                if (calculatedJaroWinklerSimilarity != null && calculatedJaroWinklerSimilarity > 0.95)
+                                if (calculatedJaccardSimilarity != null && calculatedJaccardSimilarity > 0.96)
                                 {
-                                    MethodContainer matchedMethodContainer = new MethodContainer();
-                                    matchedMethodContainer.setMethodName(sourceCodeMethodName);
-                                    matchedMethodContainer.setClassName(matchedSourceCodeClass);
-                                    matchedMethodContainer.setDuration(extractedMethodContainer.getDuration());
-                                    matchedMethodContainer.setBoundingBox(extractedMethodContainer.getBoundingBox());
+                                    final JaroWinklerSimilarity jaroWinklerSimilarity = new JaroWinklerSimilarity();
+                                    final Double calculatedJaroWinklerSimilarity =
+                                        jaroWinklerSimilarity.apply(sourceCodeMethodShort, possibleMethodName);
 
-                                    matchedMethodList.add(matchedMethodContainer);
+                                    if (calculatedJaroWinklerSimilarity != null
+                                        && calculatedJaroWinklerSimilarity > 0.95)
+                                    {
+                                        MethodContainer matchedMethodContainer = new MethodContainer();
+                                        matchedMethodContainer.setMethodName(sourceCodeMethodName);
+                                        matchedMethodContainer.setClassName(classContainer.getClassName());
+                                        matchedMethodContainer.setDuration(extractedDuration);
+                                        matchedMethodContainer.setBoundingBox(
+                                            extractedMethodContainer.getBoundingBox());
+
+                                        matchedMethodList.add(matchedMethodContainer);
+                                    }
                                 }
-                            }
 
-                        }
+                            }
                     }
-                })));
+                }
+            }
+        }
 
         return matchedMethodList;
     }
 
-    private List<Pair<String, String>> readVisitedClassesFromEditorTraceFiles()
+    private List<ClassContainer> readVisitedClassesFromEditorTraceFiles()
     {
         final String userRunDir = System.getProperties().getProperty("user.dir");
         final String pathToWrite = userRunDir + "/src/test/resources/";
         final JSONParser jsonParser = new JSONParser();
-        final List<Pair<String, String>> visitedJavaClasses = new ArrayList<>();
+        final List<ClassContainer> classContainerList = new ArrayList<>();
 
         try (Stream<Path> pathsOfFiles = Files.walk(Paths.get(pathToWrite), 1))
         {
@@ -445,11 +466,20 @@ public class ParsingServiceImpl implements ParsingService
                         final String fileName = StringUtils.substringAfterLast(fullFileName, "\\");
                         if (StringUtils.containsIgnoreCase(fullFileName, ".java"))
                         {
-                            final String javaClassFile = StringUtils.substringBefore(fileName, ".java");
-                            final String moduleName = StringUtils.replaceChars(
-                                StringUtils.substringBetween(fullFileName, "project\\", "\\src"), '-', '.');
-                            System.out.println("Modul: " + moduleName + " Class: " + javaClassFile);
-                            visitedJavaClasses.add(Pair.of(moduleName, javaClassFile));
+                            final String fullJavaFilePathWithoutExtension =
+                                StringUtils.substringBefore(fullFileName, ".java");
+                            final String subString =
+                                StringUtils.substringAfter(fullJavaFilePathWithoutExtension, "java\\");
+                            final String[] split = StringUtils.split(subString, "\\");
+                            final String fullyQualifiedClassName = split != null ? StringUtils.join(split, '.') : "";
+
+                            final ClassContainer classContainer = new ClassContainer();
+                            final String opened = (String) jsonObject.get("opened");
+                            classContainer.setOpenedFrom(Long.valueOf(opened));
+                            final String closed = (String) jsonObject.get("closed");
+                            classContainer.setClosedAt(Long.valueOf(closed));
+                            classContainer.setClassName(fullyQualifiedClassName);
+                            classContainerList.add(classContainer);
                         }
                     }
 
@@ -466,6 +496,6 @@ public class ParsingServiceImpl implements ParsingService
             e.printStackTrace();
         }
 
-        return visitedJavaClasses;
+        return classContainerList;
     }
 }
