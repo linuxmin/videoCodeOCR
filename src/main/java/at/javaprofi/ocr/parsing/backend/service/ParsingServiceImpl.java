@@ -157,17 +157,17 @@ public class ParsingServiceImpl implements ParsingService
     {
 
         final List<ClassContainer> visitedClassContainerList =
-            parseCodeFromGroundTruthAndBuildMapWithMatchingClassCandidates();
+            parseCodeFromGroundTruthAndBuildMatchingClassContainerList();
 
         final List<MethodContainer> matchedMethodList =
             calculateMatchingSourceMethodsOfClassCandidates(extractedRawMethodContainerList, visitedClassContainerList);
 
-        createGraphVizDotFileFromMatchingMethods(matchedMethodList);
+        //   createGraphVizDotFileFromMatchingMethods(matchedMethodList);
 
         final List<MethodContainer> totalDurationMethodList =
             calculateTotalVisibilityDurationPerMatchedMethod(matchedMethodList);
 
-        writePlantUMLFile(visitedClassContainerList, totalDurationMethodList);
+        writePlantUMLFile(visitedClassContainerList, totalDurationMethodList, matchedMethodList);
 
         LOG.info("Writing matches to json");
 
@@ -176,21 +176,60 @@ public class ParsingServiceImpl implements ParsingService
         );
 
         LOG.info("Finished writing json");
-
     }
 
     private void writePlantUMLFile(List<ClassContainer> visitedClassContainerList,
-        List<MethodContainer> totalDurationMethodList)
+        List<MethodContainer> totalDurationMethodList,
+        List<MethodContainer> matchedMethodList)
     {
         final StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("@startuml");
         stringBuilder.append('\n');
+
+        final Map<String, List<ClassContainer>> classesPerPackageMap =
+            visitedClassContainerList.stream().collect(Collectors.groupingBy(ClassContainer::getPackageName));
+        int i = 0;
+        final Set<String> fullyQualifiedClassNameSet = new HashSet<>();
+
+        for (Map.Entry<String, List<ClassContainer>> entry : classesPerPackageMap.entrySet())
+        {
+            String packageName = entry.getKey();
+            List<ClassContainer> classContainerList = entry.getValue();
+            stringBuilder.append("package ").append(packageName).append("{").append('\n');
+            for (ClassContainer classContainer : classContainerList)
+            {
+                if (fullyQualifiedClassNameSet.add(classContainer.getFullyQualifiedClassName()))
+                {
+                    System.out.println("package: " + packageName);
+                    System.out.println("class: " + classContainer.getSimpleClassName());
+                    System.out.println("");
+                    stringBuilder
+                        .append("class ")
+                        .append('"')
+                        .append(classContainer.getSimpleClassName())
+                        .append('"')
+                        .append(" as ")
+                        .append(classContainer.getSimpleClassName())
+                        .append(i)
+                        .append(" {")
+                        .append('\n');
+
+                    for (String method : classContainer.getMethodList())
+                    {
+                        stringBuilder.append(method).append('\n');
+                    }
+
+                    stringBuilder.append("}").append('\n');
+                }
+            }
+
+            stringBuilder.append("}").append('\n');
+            ++i;
+        }
+        /*
         for (ClassContainer classContainer : visitedClassContainerList)
         {
-            stringBuilder.append("class ");
-            stringBuilder.append(classContainer.getClassName());
-            stringBuilder.append("{");
-            stringBuilder.append('\n');
+            stringBuilder.append("class ").append(classContainer.getFullyQualifiedClassName()).append("{").append('\n');
             for (String methodName : classContainer.getMethodList())
             {
                 stringBuilder.append(methodName);
@@ -201,6 +240,28 @@ public class ParsingServiceImpl implements ParsingService
 
         }
 
+     String previousClass = null;
+        String previousMethod = null;
+        for (MethodContainer methodContainer : matchedMethodList)
+        {
+            if (previousClass == null)
+            {
+                stringBuilder.append(methodContainer.getClassName());
+                stringBuilder.append("::");
+                stringBuilder.append(methodContainer.getMethodName());
+                previousClass = methodContainer.getClassName();
+            }
+
+            if (previousMethod != null
+                && !StringUtils.equals(methodContainer.getMethodName(), previousMethod)
+                && !StringUtils.equals(methodContainer.getClassName(), previousClass))
+            {
+                stringBuilder.append("-->");
+                previousClass = null;
+            }
+
+            previousMethod = methodContainer.getMethodName();
+        }*/
         stringBuilder.append("@enduml");
 
         try (FileWriter file = new FileWriter("plantuml.txt"))
@@ -279,7 +340,7 @@ public class ParsingServiceImpl implements ParsingService
         return Factory.mutNode(methodContainer.getMethodName());
     }
 
-    private List<ClassContainer> parseCodeFromGroundTruthAndBuildMapWithMatchingClassCandidates()
+    private List<ClassContainer> parseCodeFromGroundTruthAndBuildMatchingClassContainerList()
     {
 
         final GenericVisitorAdapter<Map<String, List<String>>, Object> genericVisitorAdapter =
@@ -288,10 +349,7 @@ public class ParsingServiceImpl implements ParsingService
                 @Override
                 public Map<String, List<String>> visit(ClassOrInterfaceDeclaration n, Object arg)
                 {
-                    final String nameAsString =
-                        n.findCompilationUnit().get().getPackageDeclaration().get().getNameAsString();
                     final Map<String, List<String>> classMethodMap = new HashMap<>();
-                    System.out.println(nameAsString);
                     classMethodMap.putIfAbsent(n.getFullyQualifiedName().orElse(null), n.getMethods()
                         .stream()
                         .map(methodDeclaration -> methodDeclaration.getDeclarationAsString(true, true, true))
@@ -333,15 +391,13 @@ public class ParsingServiceImpl implements ParsingService
 
         LOG.info("Finding class matching candidates and creating class/methods map for method name similarity search");
 
-        final Map<String, List<String>> matchedClassesMethodMap = new HashMap<>();
-
         final List<ClassContainer> visitedClasses = readVisitedClassesFromEditorTraceFiles();
 
         parsedMethodNamesPerClass.forEach((className, methodNames) ->
             methodNames.forEach(methodName ->
                 visitedClasses.forEach(classContainer ->
                 {
-                    if (StringUtils.equals(className, classContainer.getClassName()))
+                    if (StringUtils.equals(className, classContainer.getFullyQualifiedClassName()))
                     {
                         classContainer.setMethodList(parsedMethodNamesPerClass.get(className));
                     }
@@ -467,7 +523,8 @@ public class ParsingServiceImpl implements ParsingService
                                     {
                                         MethodContainer matchedMethodContainer = new MethodContainer();
                                         matchedMethodContainer.setMethodName(sourceCodeMethodName);
-                                        matchedMethodContainer.setClassName(classContainer.getClassName());
+                                        matchedMethodContainer.setClassName(
+                                            classContainer.getFullyQualifiedClassName());
                                         matchedMethodContainer.setDuration(extractedDuration);
                                         matchedMethodContainer.setBoundingBox(
                                             extractedMethodContainer.getBoundingBox());
@@ -510,13 +567,16 @@ public class ParsingServiceImpl implements ParsingService
                                 StringUtils.substringAfter(fullJavaFilePathWithoutExtension, "java\\");
                             final String[] split = StringUtils.split(subString, "\\");
                             final String fullyQualifiedClassName = split != null ? StringUtils.join(split, '.') : "";
-
+                            final String packageName = StringUtils.substringBeforeLast(fullyQualifiedClassName, ".");
+                            final String simpleClassName = StringUtils.substringAfterLast(fullyQualifiedClassName, ".");
                             final ClassContainer classContainer = new ClassContainer();
                             final String opened = (String) jsonObject.get("opened");
                             classContainer.setOpenedFrom(Long.valueOf(opened));
                             final String closed = (String) jsonObject.get("closed");
                             classContainer.setClosedAt(Long.valueOf(closed));
-                            classContainer.setClassName(fullyQualifiedClassName);
+                            classContainer.setFullyQualifiedClassName(fullyQualifiedClassName);
+                            classContainer.setSimpleClassName(simpleClassName);
+                            classContainer.setPackageName(packageName);
                             classContainerList.add(classContainer);
                         }
                     }

@@ -9,19 +9,31 @@ import java.util.List;
  */
 public class ClassContainer
 {
-    private String className;
+    private String fullyQualifiedClassName;
+    private String packageName;
     private List<String> methodList = new ArrayList<>();
     private Long openedFrom;
     private Long closedAt;
+    private String simpleClassName;
 
-    public void setClassName(String className)
+    public String getPackageName()
     {
-        this.className = className;
+        return packageName;
     }
 
-    public String getClassName()
+    public void setPackageName(String packageName)
     {
-        return className;
+        this.packageName = packageName;
+    }
+
+    public void setFullyQualifiedClassName(String fullyQualifiedClassName)
+    {
+        this.fullyQualifiedClassName = fullyQualifiedClassName;
+    }
+
+    public String getFullyQualifiedClassName()
+    {
+        return fullyQualifiedClassName;
     }
 
     public List<String> getMethodList()
@@ -52,5 +64,15 @@ public class ClassContainer
     public void setClosedAt(Long closedAt)
     {
         this.closedAt = closedAt;
+    }
+
+    public void setSimpleClassName(String simpleClassName)
+    {
+        this.simpleClassName = simpleClassName;
+    }
+
+    public String getSimpleClassName()
+    {
+        return simpleClassName;
     }
 }
