@@ -3,6 +3,7 @@ package at.javaprofi.ocr.parsing.backend.service;
 import java.awt.*;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -166,6 +167,8 @@ public class ParsingServiceImpl implements ParsingService
         final List<MethodContainer> totalDurationMethodList =
             calculateTotalVisibilityDurationPerMatchedMethod(matchedMethodList);
 
+        writePlantUMLFile(visitedClassContainerList, totalDurationMethodList);
+
         LOG.info("Writing matches to json");
 
         fileService.writeVisualizationDataToJSON(pathContainer,
@@ -174,6 +177,41 @@ public class ParsingServiceImpl implements ParsingService
 
         LOG.info("Finished writing json");
 
+    }
+
+    private void writePlantUMLFile(List<ClassContainer> visitedClassContainerList,
+        List<MethodContainer> totalDurationMethodList)
+    {
+        final StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("@startuml");
+        stringBuilder.append('\n');
+        for (ClassContainer classContainer : visitedClassContainerList)
+        {
+            stringBuilder.append("class ");
+            stringBuilder.append(classContainer.getClassName());
+            stringBuilder.append("{");
+            stringBuilder.append('\n');
+            for (String methodName : classContainer.getMethodList())
+            {
+                stringBuilder.append(methodName);
+                stringBuilder.append('\n');
+            }
+            stringBuilder.append("}");
+            stringBuilder.append('\n');
+
+        }
+
+        stringBuilder.append("@enduml");
+
+        try (FileWriter file = new FileWriter("plantuml.txt"))
+        {
+            file.write(stringBuilder.toString());
+
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     //TODO eventuell einfach PlantUML String

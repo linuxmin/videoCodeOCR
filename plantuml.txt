@@ -1,0 +1,39 @@
+@startuml
+class com.banking.app.security.AuthoritiesConstants{
+}
+class com.payment.app.security.AuthoritiesConstants{
+}
+class com.banking.app.security.AuthoritiesConstants{
+}
+class com.banking.app.security.AuthoritiesConstants{
+}
+class com.banking.app.security.SecurityUtils{
+public static Optional<String> getCurrentUserLogin()
+public static Optional<String> getCurrentUserJWT()
+public static boolean isAuthenticated()
+public static boolean isCurrentUserInRole(String authority)
+}
+class com.payment.app.security.SecurityUtils{
+public static Optional<String> getCurrentUserLogin()
+public static Optional<String> getCurrentUserJWT()
+public static boolean isAuthenticated()
+public static boolean isCurrentUserInRole(String authority)
+}
+class com.payment.app.service.CardReaderManager{
+public Boolean validateCard(String cardNumber, String pin)
+public Debit debitCard(Double price, String cardNumber)
+}
+class com.payment.app.service.CardReaderManager{
+public Boolean validateCard(String cardNumber, String pin)
+public Debit debitCard(Double price, String cardNumber)
+}
+class com.payment.app.web.rest.CardReaderResource{
+public Boolean validateCard(@PathVariable String cardNumber, @PathVariable String pin)
+public Debit debitCard(@PathVariable Double price, @PathVariable String cardNumber)
+}
+class com.payment.app.PaymentApp{
+public void initApplication()
+public static void main(String[] args)
+private static void logApplicationStartup(Environment env)
+}
+@enduml
