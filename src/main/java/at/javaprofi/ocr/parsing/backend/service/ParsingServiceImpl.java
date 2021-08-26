@@ -202,7 +202,7 @@ public class ParsingServiceImpl implements ParsingService
                         .append(classContainer.getSimpleClassName())
                         .append('"')
                         .append(" as ")
-                        .append(classContainer.getFullyQualifiedClassName())
+                        .append(StringUtils.remove(classContainer.getFullyQualifiedClassName(), "."))
                         .append(" {")
                         .append('\n');
 
@@ -217,13 +217,58 @@ public class ParsingServiceImpl implements ParsingService
         String previousClass = null;
         String previousMethod = null;
 
+        String startClass = null;
+
+        visitedClassContainerList.sort(Comparator.comparingLong(ClassContainer::getOpenedFrom));
+
+        for (ClassContainer classContainer : visitedClassContainerList)
+        {
+            System.out.println("");
+
+            final String fullyQualifiedClassName = classContainer.getFullyQualifiedClassName();
+            System.out.println("Klasse momentan: " + fullyQualifiedClassName);
+
+            final String currentClassAlias =
+                startClass == null ? StringUtils.remove(fullyQualifiedClassName, ".") : startClass;
+
+            System.out.println("CurrentClassAlias: " + currentClassAlias);
+
+            if (previousClass == null)
+            {
+                System.out.println("Start: " + currentClassAlias);
+
+                stringBuilder.append(currentClassAlias);
+                previousClass = fullyQualifiedClassName;
+                startClass = null;
+            }
+            else if (!StringUtils.equals(previousClass, fullyQualifiedClassName))
+            {
+                System.out.println("Target: " + currentClassAlias);
+                System.out.println("Previous: " + previousClass);
+                System.out.println("fullyQualifiedClassName: " + fullyQualifiedClassName);
+                System.out.println("");
+
+                stringBuilder.append("..>");
+                stringBuilder.append(currentClassAlias);
+                stringBuilder.append('\n');
+                previousClass = null;
+                startClass = currentClassAlias;
+            }
+            System.out.println("");
+
+        }
+
         for (MethodContainer methodContainer : matchedMethodList)
         {
             if (previousClass == null)
             {
-                stringBuilder.append(methodContainer.getClassName());
+                final String fullMethodName = methodContainer.getMethodName();
+
+                final String methodWithoutParameter = StringUtils.substringBefore(fullMethodName, "(");
+                final String shortMethodName = StringUtils.substringAfterLast(methodWithoutParameter, " ");
+                stringBuilder.append(StringUtils.remove(methodContainer.getClassName(), "."));
                 stringBuilder.append("::");
-                stringBuilder.append(methodContainer.getMethodName());
+                stringBuilder.append(shortMethodName);
                 previousClass = methodContainer.getClassName();
 
                 if (arrowDrawn)

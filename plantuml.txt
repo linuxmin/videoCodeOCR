@@ -1,27 +1,27 @@
 @startuml
 package com.payment.app.web.rest{
-class "CardReaderResource" as com.payment.app.web.rest.CardReaderResource {
+class "CardReaderResource" as compaymentappwebrestCardReaderResource {
 public Boolean validateCard(@PathVariable String cardNumber, @PathVariable String pin)
 public Debit debitCard(@PathVariable Double price, @PathVariable String cardNumber)
 }
 }
 package com.payment.app.service{
-class "CardReaderManager" as com.payment.app.service.CardReaderManager {
+class "CardReaderManager" as compaymentappserviceCardReaderManager {
 public Boolean validateCard(String cardNumber, String pin)
 public Debit debitCard(Double price, String cardNumber)
 }
 }
 package com.payment.app{
-class "PaymentApp" as com.payment.app.PaymentApp {
+class "PaymentApp" as compaymentappPaymentApp {
 public void initApplication()
 public static void main(String[] args)
 private static void logApplicationStartup(Environment env)
 }
 }
 package com.banking.app.security{
-class "AuthoritiesConstants" as com.banking.app.security.AuthoritiesConstants {
+class "AuthoritiesConstants" as combankingappsecurityAuthoritiesConstants {
 }
-class "SecurityUtils" as com.banking.app.security.SecurityUtils {
+class "SecurityUtils" as combankingappsecuritySecurityUtils {
 public static Optional<String> getCurrentUserLogin()
 public static Optional<String> getCurrentUserJWT()
 public static boolean isAuthenticated()
@@ -29,16 +29,20 @@ public static boolean isCurrentUserInRole(String authority)
 }
 }
 package com.payment.app.security{
-class "AuthoritiesConstants" as com.payment.app.security.AuthoritiesConstants {
+class "AuthoritiesConstants" as compaymentappsecurityAuthoritiesConstants {
 }
-class "SecurityUtils" as com.payment.app.security.SecurityUtils {
+class "SecurityUtils" as compaymentappsecuritySecurityUtils {
 public static Optional<String> getCurrentUserLogin()
 public static Optional<String> getCurrentUserJWT()
 public static boolean isAuthenticated()
 public static boolean isCurrentUserInRole(String authority)
 }
 }
-com.banking.app.security.SecurityUtils::public static boolean isAuthenticated()-->com.payment.app.PaymentApp::public void initApplication()
-com.payment.app.PaymentApp::public void initApplication()-->com.payment.app.service.CardReaderManager::public Boolean validateCard(String cardNumber, String pin)
-com.payment.app.service.CardReaderManager::public Boolean validateCard(String cardNumber, String pin)-->com.payment.app.web.rest.CardReaderResource::public Boolean validateCard(@PathVariable String cardNumber, @PathVariable String pin)
-com.payment.app.web.rest.CardReaderResource::public Boolean validateCard(@PathVariable String cardNumber, @PathVariable String pin)@enduml
+combankingappsecurityAuthoritiesConstants..>combankingappsecuritySecurityUtils
+combankingappsecuritySecurityUtils..>compaymentappsecurityAuthoritiesConstants
+compaymentappsecurityAuthoritiesConstants..>compaymentappserviceCardReaderManager
+compaymentappserviceCardReaderManager..>compaymentappserviceCardReaderManager
+combankingappsecuritySecurityUtils::isAuthenticated-->compaymentappPaymentApp::initApplication
+compaymentappPaymentApp::initApplication-->compaymentappserviceCardReaderManager::validateCard
+compaymentappserviceCardReaderManager::validateCard-->compaymentappwebrestCardReaderResource::validateCard
+compaymentappwebrestCardReaderResource::validateCard@enduml
