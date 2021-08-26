@@ -213,119 +213,54 @@ public class ParsingServiceImpl implements ParsingService
             stringBuilder.append("}").append('\n');
         });
 
-        boolean arrowDrawn = false;
         String previousClass = null;
-        String previousMethod = null;
-
-        String startClass = null;
 
         visitedClassContainerList.sort(Comparator.comparingLong(ClassContainer::getOpenedFrom));
 
         for (ClassContainer classContainer : visitedClassContainerList)
         {
-            System.out.println("");
+            final String currentClass = StringUtils.remove(classContainer.getFullyQualifiedClassName(), ".");
 
-            final String fullyQualifiedClassName = classContainer.getFullyQualifiedClassName();
-            System.out.println("Klasse momentan: " + fullyQualifiedClassName);
-
-            final String currentClassAlias =
-                startClass == null ? StringUtils.remove(fullyQualifiedClassName, ".") : startClass;
-
-            System.out.println("CurrentClassAlias: " + currentClassAlias);
-
-            if (previousClass == null)
+            if (previousClass != null && !StringUtils.equals(currentClass, previousClass))
             {
-                System.out.println("Start: " + currentClassAlias);
-
-                stringBuilder.append(currentClassAlias);
-                previousClass = fullyQualifiedClassName;
-                startClass = null;
-            }
-            else if (!StringUtils.equals(previousClass, fullyQualifiedClassName))
-            {
-                System.out.println("Target: " + currentClassAlias);
-                System.out.println("Previous: " + previousClass);
-                System.out.println("fullyQualifiedClassName: " + fullyQualifiedClassName);
-                System.out.println("");
-
+                stringBuilder.append(previousClass);
                 stringBuilder.append("..>");
-                stringBuilder.append(currentClassAlias);
+                stringBuilder.append(currentClass);
                 stringBuilder.append('\n');
-                previousClass = null;
-                startClass = currentClassAlias;
             }
-            System.out.println("");
 
+            previousClass = currentClass;
         }
+
+        previousClass = null;
+        String previousMethodAlias = null;
 
         for (MethodContainer methodContainer : matchedMethodList)
         {
-            if (previousClass == null)
+            final String currentClass = methodContainer.getClassName();
+            final String currentMethodAlias =
+                StringUtils.substringAfterLast(StringUtils.substringBefore(methodContainer.getMethodName(), "("), " ");
+
+            if (previousClass != null && previousMethodAlias != null)
             {
-                final String fullMethodName = methodContainer.getMethodName();
-
-                final String methodWithoutParameter = StringUtils.substringBefore(fullMethodName, "(");
-                final String shortMethodName = StringUtils.substringAfterLast(methodWithoutParameter, " ");
-                stringBuilder.append(StringUtils.remove(methodContainer.getClassName(), "."));
-                stringBuilder.append("::");
-                stringBuilder.append(shortMethodName);
-                previousClass = methodContainer.getClassName();
-
-                if (arrowDrawn)
+                if (!StringUtils.equals(currentMethodAlias, previousMethodAlias) ||
+                    !StringUtils.equals(currentClass, previousClass))
                 {
+                    stringBuilder.append(StringUtils.remove(previousClass, "."));
+                    stringBuilder.append("::");
+                    stringBuilder.append(previousMethodAlias);
+                    stringBuilder.append("->");
+                    stringBuilder.append(StringUtils.remove(currentClass, "."));
+                    stringBuilder.append("::");
+                    stringBuilder.append(currentMethodAlias);
                     stringBuilder.append('\n');
-                    previousClass = null;
-                    arrowDrawn = false;
                 }
             }
 
-            if (previousMethod != null
-                && !StringUtils.equals(methodContainer.getMethodName(), previousMethod)
-                && !StringUtils.equals(methodContainer.getClassName(), previousClass))
-            {
-                stringBuilder.append("-->");
-                previousClass = null;
-                arrowDrawn = true;
-            }
-
-            previousMethod = methodContainer.getMethodName();
-        }
-        /*
-        for (ClassContainer classContainer : visitedClassContainerList)
-        {
-            stringBuilder.append("class ").append(classContainer.getFullyQualifiedClassName()).append("{").append('\n');
-            for (String methodName : classContainer.getMethodList())
-            {
-                stringBuilder.append(methodName);
-                stringBuilder.append('\n');
-            }
-            stringBuilder.append("}");
-            stringBuilder.append('\n');
-
+            previousClass = currentClass;
+            previousMethodAlias = currentMethodAlias;
         }
 
-     String previousClass = null;
-        String previousMethod = null;
-        for (MethodContainer methodContainer : matchedMethodList)
-        {
-            if (previousClass == null)
-            {
-                stringBuilder.append(methodContainer.getClassName());
-                stringBuilder.append("::");
-                stringBuilder.append(methodContainer.getMethodName());
-                previousClass = methodContainer.getClassName();
-            }
-
-            if (previousMethod != null
-                && !StringUtils.equals(methodContainer.getMethodName(), previousMethod)
-                && !StringUtils.equals(methodContainer.getClassName(), previousClass))
-            {
-                stringBuilder.append("-->");
-                previousClass = null;
-            }
-
-            previousMethod = methodContainer.getMethodName();
-        }*/
         stringBuilder.append("@enduml");
 
         try (FileWriter file = new FileWriter("plantuml.txt"))
