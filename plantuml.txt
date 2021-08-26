@@ -1,27 +1,27 @@
 @startuml
 package com.payment.app.web.rest{
-class "CardReaderResource" as CardReaderResource0 {
+class "CardReaderResource" as com.payment.app.web.rest.CardReaderResource {
 public Boolean validateCard(@PathVariable String cardNumber, @PathVariable String pin)
 public Debit debitCard(@PathVariable Double price, @PathVariable String cardNumber)
 }
 }
 package com.payment.app.service{
-class "CardReaderManager" as CardReaderManager1 {
+class "CardReaderManager" as com.payment.app.service.CardReaderManager {
 public Boolean validateCard(String cardNumber, String pin)
 public Debit debitCard(Double price, String cardNumber)
 }
 }
 package com.payment.app{
-class "PaymentApp" as PaymentApp2 {
+class "PaymentApp" as com.payment.app.PaymentApp {
 public void initApplication()
 public static void main(String[] args)
 private static void logApplicationStartup(Environment env)
 }
 }
 package com.banking.app.security{
-class "AuthoritiesConstants" as AuthoritiesConstants3 {
+class "AuthoritiesConstants" as com.banking.app.security.AuthoritiesConstants {
 }
-class "SecurityUtils" as SecurityUtils3 {
+class "SecurityUtils" as com.banking.app.security.SecurityUtils {
 public static Optional<String> getCurrentUserLogin()
 public static Optional<String> getCurrentUserJWT()
 public static boolean isAuthenticated()
@@ -29,13 +29,16 @@ public static boolean isCurrentUserInRole(String authority)
 }
 }
 package com.payment.app.security{
-class "AuthoritiesConstants" as AuthoritiesConstants4 {
+class "AuthoritiesConstants" as com.payment.app.security.AuthoritiesConstants {
 }
-class "SecurityUtils" as SecurityUtils4 {
+class "SecurityUtils" as com.payment.app.security.SecurityUtils {
 public static Optional<String> getCurrentUserLogin()
 public static Optional<String> getCurrentUserJWT()
 public static boolean isAuthenticated()
 public static boolean isCurrentUserInRole(String authority)
 }
 }
-@enduml
+com.banking.app.security.SecurityUtils::public static boolean isAuthenticated()-->com.payment.app.PaymentApp::public void initApplication()
+com.payment.app.PaymentApp::public void initApplication()-->com.payment.app.service.CardReaderManager::public Boolean validateCard(String cardNumber, String pin)
+com.payment.app.service.CardReaderManager::public Boolean validateCard(String cardNumber, String pin)-->com.payment.app.web.rest.CardReaderResource::public Boolean validateCard(@PathVariable String cardNumber, @PathVariable String pin)
+com.payment.app.web.rest.CardReaderResource::public Boolean validateCard(@PathVariable String cardNumber, @PathVariable String pin)@enduml

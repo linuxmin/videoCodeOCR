@@ -188,43 +188,62 @@ public class ParsingServiceImpl implements ParsingService
 
         final Map<String, List<ClassContainer>> classesPerPackageMap =
             visitedClassContainerList.stream().collect(Collectors.groupingBy(ClassContainer::getPackageName));
-        int i = 0;
         final Set<String> fullyQualifiedClassNameSet = new HashSet<>();
 
-        for (Map.Entry<String, List<ClassContainer>> entry : classesPerPackageMap.entrySet())
-        {
-            String packageName = entry.getKey();
-            List<ClassContainer> classContainerList = entry.getValue();
+        classesPerPackageMap.forEach((packageName, classContainerList) -> {
             stringBuilder.append("package ").append(packageName).append("{").append('\n');
             for (ClassContainer classContainer : classContainerList)
             {
                 if (fullyQualifiedClassNameSet.add(classContainer.getFullyQualifiedClassName()))
                 {
-                    System.out.println("package: " + packageName);
-                    System.out.println("class: " + classContainer.getSimpleClassName());
-                    System.out.println("");
                     stringBuilder
                         .append("class ")
                         .append('"')
                         .append(classContainer.getSimpleClassName())
                         .append('"')
                         .append(" as ")
-                        .append(classContainer.getSimpleClassName())
-                        .append(i)
+                        .append(classContainer.getFullyQualifiedClassName())
                         .append(" {")
                         .append('\n');
 
-                    for (String method : classContainer.getMethodList())
-                    {
-                        stringBuilder.append(method).append('\n');
-                    }
-
+                    classContainer.getMethodList().forEach(method -> stringBuilder.append(method).append('\n'));
                     stringBuilder.append("}").append('\n');
                 }
             }
-
             stringBuilder.append("}").append('\n');
-            ++i;
+        });
+
+        boolean arrowDrawn = false;
+        String previousClass = null;
+        String previousMethod = null;
+
+        for (MethodContainer methodContainer : matchedMethodList)
+        {
+            if (previousClass == null)
+            {
+                stringBuilder.append(methodContainer.getClassName());
+                stringBuilder.append("::");
+                stringBuilder.append(methodContainer.getMethodName());
+                previousClass = methodContainer.getClassName();
+
+                if (arrowDrawn)
+                {
+                    stringBuilder.append('\n');
+                    previousClass = null;
+                    arrowDrawn = false;
+                }
+            }
+
+            if (previousMethod != null
+                && !StringUtils.equals(methodContainer.getMethodName(), previousMethod)
+                && !StringUtils.equals(methodContainer.getClassName(), previousClass))
+            {
+                stringBuilder.append("-->");
+                previousClass = null;
+                arrowDrawn = true;
+            }
+
+            previousMethod = methodContainer.getMethodName();
         }
         /*
         for (ClassContainer classContainer : visitedClassContainerList)
