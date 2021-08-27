@@ -1,41 +1,41 @@
 @startuml
 package com.payment.app.web.rest{
 class "CardReaderResource" as compaymentappwebrestCardReaderResource #BLUE-BLUE {
-public Boolean validateCard(@PathVariable String cardNumber, @PathVariable String pin)
-public Debit debitCard(@PathVariable Double price, @PathVariable String cardNumber)
+<size:15>public Boolean validateCard(@PathVariable String cardNumber, @PathVariable String pin)
+<size:9>public Debit debitCard(@PathVariable Double price, @PathVariable String cardNumber)
 }
 }
 package com.payment.app.service{
 class "CardReaderManager" as compaymentappserviceCardReaderManager #GREEN-BLUE {
-public Boolean validateCard(String cardNumber, String pin)
-public Debit debitCard(Double price, String cardNumber)
+<size:40>public Boolean validateCard(String cardNumber, String pin)
+<size:13>public Debit debitCard(Double price, String cardNumber)
 }
 }
 package com.payment.app{
 class "PaymentApp" as compaymentappPaymentApp #GREEN-GREEN {
-public void initApplication()
-public static void main(String[] args)
-private static void logApplicationStartup(Environment env)
+<size:8>public void initApplication()
+<size:9>public static void main(String[] args)
+<size:11>private static void logApplicationStartup(Environment env)
 }
 }
 package com.banking.app.security{
 class "AuthoritiesConstants" as combankingappsecurityAuthoritiesConstants #YELLOW-ORANGE {
 }
 class "SecurityUtils" as combankingappsecuritySecurityUtils #ORANGE-RED {
-public static Optional<String> getCurrentUserLogin()
-public static Optional<String> getCurrentUserJWT()
-public static boolean isAuthenticated()
-public static boolean isCurrentUserInRole(String authority)
+<color:white>public static Optional<String> getCurrentUserLogin()
+<color:white>public static Optional<String> getCurrentUserJWT()
+<size:10>public static boolean isAuthenticated()
+<size:26>public static boolean isCurrentUserInRole(String authority)
 }
 }
 package com.payment.app.security{
 class "AuthoritiesConstants" as compaymentappsecurityAuthoritiesConstants #GREEN-GREEN {
 }
 class "SecurityUtils" as compaymentappsecuritySecurityUtils #RED-GREEN {
-public static Optional<String> getCurrentUserLogin()
-public static Optional<String> getCurrentUserJWT()
-public static boolean isAuthenticated()
-public static boolean isCurrentUserInRole(String authority)
+<color:white>public static Optional<String> getCurrentUserLogin()
+<color:white>public static Optional<String> getCurrentUserJWT()
+<color:white>public static boolean isAuthenticated()
+<color:white>public static boolean isCurrentUserInRole(String authority)
 }
 }
 combankingappsecurityAuthoritiesConstants..>combankingappsecuritySecurityUtils

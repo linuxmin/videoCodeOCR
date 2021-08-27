@@ -152,14 +152,14 @@ public class ParsingServiceImpl implements ParsingService
 
         stringBuilder.append("@startuml").append('\n');
 
-        matchedMethodList.forEach(methodContainer -> visitedClassContainerList.forEach(classContainer -> {
+        totalDurationMethodList.forEach(methodContainer -> visitedClassContainerList.forEach(classContainer -> {
             if (StringUtils.equals(methodContainer.getClassName(), classContainer.getFullyQualifiedClassName()))
             {
                 classContainer.getMethodContainerList().add(methodContainer);
             }
         }));
 
-        buildPlantUmlClasses(visitedClassContainerList, stringBuilder);
+        buildPlantUmlClasses(visitedClassContainerList, totalDurationMethodList, stringBuilder);
         buildPlantUmlClassLinks(visitedClassContainerList, stringBuilder);
         buildPlantUmlMethodLinks(matchedMethodList, stringBuilder);
 
@@ -220,7 +220,9 @@ public class ParsingServiceImpl implements ParsingService
         }
     }
 
-    private void buildPlantUmlClasses(List<ClassContainer> visitedClassContainerList, StringBuilder stringBuilder)
+    private void buildPlantUmlClasses(List<ClassContainer> visitedClassContainerList,
+        List<MethodContainer> totalDurationMethodList,
+        StringBuilder stringBuilder)
     {
         final Map<String, List<ClassContainer>> classesPerPackageMap =
             visitedClassContainerList.stream().collect(Collectors.groupingBy(ClassContainer::getPackageName));
@@ -260,10 +262,32 @@ public class ParsingServiceImpl implements ParsingService
 
                      */
 
+                    final Long minTotalDuration = totalDurationMethodList.stream()
+                        .min(Comparator.comparingLong(MethodContainer::getDuration))
+                        .map(
+                            MethodContainer::getDuration)
+                        .orElse(0L);
+
+                    final Long maxTotalDuration = totalDurationMethodList.stream()
+                        .max(Comparator.comparingLong(MethodContainer::getDuration))
+                        .map(
+                            MethodContainer::getDuration)
+                        .orElse(0L);
+
                     classContainer.getMethodNameList().forEach(
-                        method -> stringBuilder
-                            .append(method)
-                            .append('\n'));
+                        method -> {
+                            totalDurationMethodList.stream()
+                                .filter(methodContainer -> StringUtils.equals(methodContainer.getMethodName(), method)
+                                    && StringUtils.equals(methodContainer.getClassName(),
+                                    classContainer.getFullyQualifiedClassName()))
+                                .findFirst()
+                                .ifPresentOrElse(methodContainer -> stringBuilder.append("<size:")
+                                    .append(scale(methodContainer.getDuration(), minTotalDuration, maxTotalDuration))
+                                    .append(">"), () -> stringBuilder.append("<color:white>"));
+                            stringBuilder
+                                .append(method)
+                                .append('\n');
+                        });
 
                     stringBuilder
                         .append("}")
@@ -272,6 +296,11 @@ public class ParsingServiceImpl implements ParsingService
             }
             stringBuilder.append("}").append('\n');
         });
+    }
+
+    private long scale(final double valueIn, long minTotalDuration, long maxTotalDuration)
+    {
+        return Math.round((32 * (valueIn - minTotalDuration) / (maxTotalDuration - minTotalDuration)) + 8);
     }
 
     private List<ClassContainer> parseCodeFromGroundTruthAndBuildMatchingClassContainerList() throws IOException
