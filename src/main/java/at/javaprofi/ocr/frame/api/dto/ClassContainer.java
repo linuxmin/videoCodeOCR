@@ -11,7 +11,8 @@ public class ClassContainer
 {
     private String fullyQualifiedClassName;
     private String packageName;
-    private List<String> methodList = new ArrayList<>();
+    private List<String> methodNameList = new ArrayList<>();
+    private List<MethodContainer> methodContainerList = new ArrayList<>();
     private Long openedFrom;
     private Long closedAt;
     private String simpleClassName;
@@ -36,14 +37,24 @@ public class ClassContainer
         return fullyQualifiedClassName;
     }
 
-    public List<String> getMethodList()
+    public List<String> getMethodNameList()
     {
-        return methodList;
+        return methodNameList;
     }
 
-    public void setMethodList(List<String> methodList)
+    public void setMethodNameList(List<String> methodNameList)
     {
-        this.methodList = methodList;
+        this.methodNameList = methodNameList;
+    }
+
+    public List<MethodContainer> getMethodContainerList()
+    {
+        return methodContainerList;
+    }
+
+    public void setMethodContainerList(List<MethodContainer> methodContainerList)
+    {
+        this.methodContainerList = methodContainerList;
     }
 
     public Long getOpenedFrom()

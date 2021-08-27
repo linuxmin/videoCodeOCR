@@ -1,7 +1,6 @@
 package at.javaprofi.ocr.parsing.backend.service;
 
 import java.awt.*;
-import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -32,32 +31,24 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
 import com.github.javaparser.symbolsolver.utils.SymbolSolverCollectionStrategy;
 import com.github.javaparser.utils.ProjectRoot;
+import com.github.javaparser.utils.SourceRoot;
 
 import at.javaprofi.ocr.frame.api.dto.ClassContainer;
 import at.javaprofi.ocr.frame.api.dto.MethodContainer;
 import at.javaprofi.ocr.io.api.dto.PathContainer;
 import at.javaprofi.ocr.io.api.service.FileService;
+import at.javaprofi.ocr.parsing.api.ClassMethodVisitorAdapter;
+import at.javaprofi.ocr.parsing.api.enums.ColorForTime;
 import at.javaprofi.ocr.parsing.api.service.ParsingService;
-import guru.nidi.graphviz.attribute.Shape;
-import guru.nidi.graphviz.engine.Format;
-import guru.nidi.graphviz.engine.Graphviz;
-import guru.nidi.graphviz.engine.GraphvizJdkEngine;
-import guru.nidi.graphviz.model.Factory;
-import guru.nidi.graphviz.model.MutableGraph;
-import guru.nidi.graphviz.model.MutableNode;
 
 @Service
 public class ParsingServiceImpl implements ParsingService
 {
     private static final Logger LOG = LoggerFactory.getLogger(ParsingServiceImpl.class);
-
-    private static final String[] HEADERS_DURATION = {"duration", "class_name", "method_name"};
-    private static final String[] HEADERS_MATCHED =
-        {"duration", "class_name", "method_name", "x", "y", "height", "width"};
 
     private final FileService fileService;
 
@@ -72,58 +63,36 @@ public class ParsingServiceImpl implements ParsingService
     {
         final PathContainer pathContainer =
             fileService.createDirectoriesAndRetrievePathContainerFromVideoFileName(fileName);
-        final List<MethodContainer> methodContainerListFromExtractedLinesJSON;
-
         try
         {
-            methodContainerListFromExtractedLinesJSON =
-                createMethodContainerListFromExtractedLinesJSON(pathContainer);
+            matchMethodContainerWithSourceCodeAndCreateVisualizationFiles(pathContainer,
+                createMethodContainerListFromExtractedLinesJSON(pathContainer));
         }
         catch (IOException e)
         {
-            LOG.error("exception during reading extracted lines from json: {}", pathContainer.getExtractedLinesPath());
-
-            throw new RuntimeException(e);
+            LOG.error("exception during creating viz data from json: {}", pathContainer.getExtractedLinesPath(), e);
         }
 
-        parseCodeFromSourceCodeAndMapMatchingMethodsAndWriteResultsToJSONFiles(pathContainer,
-            methodContainerListFromExtractedLinesJSON);
     }
 
     private List<MethodContainer> createMethodContainerListFromExtractedLinesJSON(
-        PathContainer pathContainer)
-        throws IOException
+        PathContainer pathContainer) throws IOException
     {
+        final JSONArray extractedLinesJSONArray = fileService.readExtractedLinesFromJSON(pathContainer);
         final List<MethodContainer> extractedMethodContainerList = new ArrayList<>();
 
-        //JSON parser object to parse read file
-        JSONParser jsonParser = new JSONParser();
-
-        try (FileReader reader = new FileReader(pathContainer.getExtractedLinesPath().toFile()))
+        if (extractedLinesJSONArray != null)
         {
-            //Read JSON file
-            Object obj = jsonParser.parse(reader);
-
-            JSONArray extractedLinesList = (JSONArray) obj;
-
-            //Iterate over employee array
-            extractedLinesList.forEach(extractedLine -> extractedMethodContainerList.addAll(
-                parseMethodContainerObject((JSONObject) extractedLine)));
-
-        }
-        catch (ParseException e)
-        {
-            LOG.error("exception occured while reading extracted lines json: ", e);
+            extractedLinesJSONArray.forEach(linesForDurationJSON -> extractedMethodContainerList.addAll(
+                extractMethodContainerListFromDuration((JSONObject) linesForDurationJSON)));
         }
 
         return extractedMethodContainerList;
-
     }
 
-    private List<MethodContainer> parseMethodContainerObject(JSONObject extractedLinesJSON)
+    private List<MethodContainer> extractMethodContainerListFromDuration(JSONObject extractedLinesJSON)
     {
-        //Get employee object within list
-        JSONArray extractedLinesForDuration = (JSONArray) extractedLinesJSON.get("wordList");
+        final JSONArray extractedLinesForDuration = (JSONArray) extractedLinesJSON.get("wordList");
 
         final List<MethodContainer> methodContainerForDurationList = new ArrayList<>();
         final Long duration = (Long) extractedLinesJSON.get("duration");
@@ -133,8 +102,8 @@ public class ParsingServiceImpl implements ParsingService
             JSONObject extractedLineJSON = (JSONObject) rawLineObject;
             final MethodContainer methodContainer = new MethodContainer();
             methodContainer.setDuration(duration);
-            final String text = (String) extractedLineJSON.get("text");
 
+            final String text = (String) extractedLineJSON.get("text");
             final Long width = (Long) extractedLineJSON.get("width");
             final Long height = (Long) extractedLineJSON.get("height");
             final Long x = (Long) extractedLineJSON.get("x");
@@ -152,17 +121,14 @@ public class ParsingServiceImpl implements ParsingService
         return methodContainerForDurationList;
     }
 
-    private void parseCodeFromSourceCodeAndMapMatchingMethodsAndWriteResultsToJSONFiles(PathContainer pathContainer,
-        List<MethodContainer> extractedRawMethodContainerList)
+    private void matchMethodContainerWithSourceCodeAndCreateVisualizationFiles(PathContainer pathContainer,
+        List<MethodContainer> extractedRawMethodContainerList) throws IOException
     {
-
         final List<ClassContainer> visitedClassContainerList =
             parseCodeFromGroundTruthAndBuildMatchingClassContainerList();
 
         final List<MethodContainer> matchedMethodList =
             calculateMatchingSourceMethodsOfClassCandidates(extractedRawMethodContainerList, visitedClassContainerList);
-
-        //   createGraphVizDotFileFromMatchingMethods(matchedMethodList);
 
         final List<MethodContainer> totalDurationMethodList =
             calculateTotalVisibilityDurationPerMatchedMethod(matchedMethodList);
@@ -180,59 +146,34 @@ public class ParsingServiceImpl implements ParsingService
 
     private void writePlantUMLFile(List<ClassContainer> visitedClassContainerList,
         List<MethodContainer> totalDurationMethodList,
-        List<MethodContainer> matchedMethodList)
+        List<MethodContainer> matchedMethodList) throws IOException
     {
         final StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("@startuml");
-        stringBuilder.append('\n');
 
-        final Map<String, List<ClassContainer>> classesPerPackageMap =
-            visitedClassContainerList.stream().collect(Collectors.groupingBy(ClassContainer::getPackageName));
-        final Set<String> fullyQualifiedClassNameSet = new HashSet<>();
+        stringBuilder.append("@startuml").append('\n');
 
-        classesPerPackageMap.forEach((packageName, classContainerList) -> {
-            stringBuilder.append("package ").append(packageName).append("{").append('\n');
-            for (ClassContainer classContainer : classContainerList)
+        matchedMethodList.forEach(methodContainer -> visitedClassContainerList.forEach(classContainer -> {
+            if (StringUtils.equals(methodContainer.getClassName(), classContainer.getFullyQualifiedClassName()))
             {
-                if (fullyQualifiedClassNameSet.add(classContainer.getFullyQualifiedClassName()))
-                {
-                    stringBuilder
-                        .append("class ")
-                        .append('"')
-                        .append(classContainer.getSimpleClassName())
-                        .append('"')
-                        .append(" as ")
-                        .append(StringUtils.remove(classContainer.getFullyQualifiedClassName(), "."))
-                        .append(" {")
-                        .append('\n');
-
-                    classContainer.getMethodList().forEach(method -> stringBuilder.append(method).append('\n'));
-                    stringBuilder.append("}").append('\n');
-                }
+                classContainer.getMethodContainerList().add(methodContainer);
             }
-            stringBuilder.append("}").append('\n');
-        });
+        }));
 
-        String previousClass = null;
+        buildPlantUmlClasses(visitedClassContainerList, stringBuilder);
+        buildPlantUmlClassLinks(visitedClassContainerList, stringBuilder);
+        buildPlantUmlMethodLinks(matchedMethodList, stringBuilder);
 
-        visitedClassContainerList.sort(Comparator.comparingLong(ClassContainer::getOpenedFrom));
+        stringBuilder.append("@enduml");
 
-        for (ClassContainer classContainer : visitedClassContainerList)
+        try (FileWriter file = new FileWriter("plantuml.txt"))
         {
-            final String currentClass = StringUtils.remove(classContainer.getFullyQualifiedClassName(), ".");
-
-            if (previousClass != null && !StringUtils.equals(currentClass, previousClass))
-            {
-                stringBuilder.append(previousClass);
-                stringBuilder.append("..>");
-                stringBuilder.append(currentClass);
-                stringBuilder.append('\n');
-            }
-
-            previousClass = currentClass;
+            file.write(stringBuilder.toString());
         }
+    }
 
-        previousClass = null;
+    private void buildPlantUmlMethodLinks(List<MethodContainer> matchedMethodList, StringBuilder stringBuilder)
+    {
+        String previousClass = null;
         String previousMethodAlias = null;
 
         for (MethodContainer methodContainer : matchedMethodList)
@@ -246,118 +187,107 @@ public class ParsingServiceImpl implements ParsingService
                 if (!StringUtils.equals(currentMethodAlias, previousMethodAlias) ||
                     !StringUtils.equals(currentClass, previousClass))
                 {
-                    stringBuilder.append(StringUtils.remove(previousClass, "."));
-                    stringBuilder.append("::");
-                    stringBuilder.append(previousMethodAlias);
-                    stringBuilder.append("->");
-                    stringBuilder.append(StringUtils.remove(currentClass, "."));
-                    stringBuilder.append("::");
-                    stringBuilder.append(currentMethodAlias);
-                    stringBuilder.append('\n');
+                    stringBuilder.append(StringUtils.remove(previousClass, "."))
+                        .append("::")
+                        .append(previousMethodAlias)
+                        .append("->")
+                        .append(StringUtils.remove(currentClass, "."))
+                        .append("::").append(currentMethodAlias).append('\n');
                 }
             }
 
             previousClass = currentClass;
             previousMethodAlias = currentMethodAlias;
         }
+    }
 
-        stringBuilder.append("@enduml");
+    private void buildPlantUmlClassLinks(List<ClassContainer> visitedClassContainerList, StringBuilder stringBuilder)
+    {
+        String previousClass = null;
 
-        try (FileWriter file = new FileWriter("plantuml.txt"))
+        visitedClassContainerList.sort(Comparator.comparingLong(ClassContainer::getOpenedFrom));
+
+        for (ClassContainer classContainer : visitedClassContainerList)
         {
-            file.write(stringBuilder.toString());
+            final String currentClass = StringUtils.remove(classContainer.getFullyQualifiedClassName(), ".");
 
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
+            if (previousClass != null && !StringUtils.equals(currentClass, previousClass))
+            {
+                stringBuilder.append(previousClass).append("..>").append(currentClass).append('\n');
+            }
+
+            previousClass = currentClass;
         }
     }
 
-    //TODO eventuell einfach PlantUML String
-    private void createGraphVizDotFileFromMatchingMethods(List<MethodContainer> matchedMethodList)
+    private void buildPlantUmlClasses(List<ClassContainer> visitedClassContainerList, StringBuilder stringBuilder)
     {
-        Graphviz.useEngine(new GraphvizJdkEngine());
-        /*
-            digraph example1 {
-               b
-               node[color=red]
-               a -> b
-           }
-        */
-        final MutableGraph mutableGraph = Factory.mutGraph("example1").setDirected(true).use((gr, ctx) -> {
-            for (int i = 1; i < matchedMethodList.size(); i++)
+        final Map<String, List<ClassContainer>> classesPerPackageMap =
+            visitedClassContainerList.stream().collect(Collectors.groupingBy(ClassContainer::getPackageName));
+
+        final Set<String> fullyQualifiedClassNameSet = new HashSet<>();
+
+        classesPerPackageMap.forEach((packageName, classContainerList) -> {
+            stringBuilder.append("package ").append(packageName).append("{").append('\n');
+
+            for (ClassContainer classContainer : classContainerList)
             {
-                final MethodContainer sourceContainer = matchedMethodList.get(i - 1);
-                final MethodContainer targetContainer = matchedMethodList.get(i);
-
-                if (sourceContainer.getDuration().compareTo(targetContainer.getDuration()) != 0 && !StringUtils.equals(
-                    sourceContainer.getClassName(), targetContainer.getClassName()))
+                if (fullyQualifiedClassNameSet.add(classContainer.getFullyQualifiedClassName()))
                 {
-                    final MutableNode targetNode = createNode(targetContainer);
-                    targetNode.attrs().add(Shape.COMPONENT);
-                    final MutableNode sourceNode = createNode(sourceContainer);
-                    sourceNode.attrs().add(Shape.COMPONENT).addLink(createNode(targetContainer));
+                    stringBuilder
+                        .append("class ")
+                        .append('"')
+                        .append(classContainer.getSimpleClassName())
+                        .append('"')
+                        .append(" as ")
+                        .append(StringUtils.remove(classContainer.getFullyQualifiedClassName(), "."))
+                        .append(" #")
+                        .append(ColorForTime.getColorForCurrentDuration(
+                            classContainer.getOpenedFrom()))  //TODO: because this is a distinct list, only first opening/closing is visualized, bette solution?
+                        .append("-")
+                        .append(ColorForTime.getColorForCurrentDuration(classContainer.getClosedAt()))
+                        .append(" {")
+                        .append('\n');
 
-                    final MutableGraph mutableGraph2 =
-                        Factory.mutGraph("example1").setDirected(true).use((gr2, ctx2) -> {
-                            createMethodNode(sourceContainer);
-                        });
+                    //TODO: method container list contains method entry for multiple durations, plant uml can't handle this many entries - other solutions?
+                    /*
+                    classContainer.getMethodContainerList().forEach(
+                        methodContainer -> stringBuilder.append("<back:")
+                            .append(ColorForTime.getColorForCurrentDuration(methodContainer.getDuration()))
+                            .append(">")
+                            .append(methodContainer.getMethodName())
+                            .append('\n'));
 
-                    mutableGraph2.addTo(gr);
+                     */
+
+                    classContainer.getMethodNameList().forEach(
+                        method -> stringBuilder
+                            .append(method)
+                            .append('\n'));
+
+                    stringBuilder
+                        .append("}")
+                        .append('\n');
                 }
             }
+            stringBuilder.append("}").append('\n');
         });
-
-        try
-        {
-            Graphviz.fromGraph(mutableGraph)
-                .width(1400)
-                .render(Format.PNG)
-                .toFile(new File("example/traceEdited1.png"));
-            Graphviz.fromGraph(mutableGraph).render(Format.DOT).toFile(new File("example/traceEdited1.dot"));
-
-           /* Graphviz.fromGraph(simpleGraph)
-                .width(1400)
-                .render(Format.PNG)
-                .toFile(new File("example/simple.png"));
-            Graphviz.fromGraph(simpleGraph).render(Format.DOT).toFile(new File("example/simple.dot"));*/
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
     }
 
-    private MutableNode createNode(MethodContainer methodContainer)
+    private List<ClassContainer> parseCodeFromGroundTruthAndBuildMatchingClassContainerList() throws IOException
     {
-        return Factory.mutNode(methodContainer.getClassName());
+        LOG.info("Finding class matching candidates and creating class/methods map for method name similarity search");
+
+        final Map<String, List<String>> parsedMethodNamesPerClass = buildParsedClassMethodMap();
+        final List<ClassContainer> visitedClassesFromTraceEditor = readVisitedClassesFromEditorTraceFiles();
+
+        return addParsedMethodsToVisitedClasses(parsedMethodNamesPerClass, visitedClassesFromTraceEditor);
     }
 
-    private MutableNode createMethodNode(MethodContainer methodContainer)
+    private Map<String, List<String>> buildParsedClassMethodMap() throws IOException
     {
-        return Factory.mutNode(methodContainer.getMethodName());
-    }
-
-    private List<ClassContainer> parseCodeFromGroundTruthAndBuildMatchingClassContainerList()
-    {
-
-        final GenericVisitorAdapter<Map<String, List<String>>, Object> genericVisitorAdapter =
-            new GenericVisitorAdapter<Map<String, List<String>>, Object>()
-            {
-                @Override
-                public Map<String, List<String>> visit(ClassOrInterfaceDeclaration n, Object arg)
-                {
-                    final Map<String, List<String>> classMethodMap = new HashMap<>();
-                    classMethodMap.putIfAbsent(n.getFullyQualifiedName().orElse(null), n.getMethods()
-                        .stream()
-                        .map(methodDeclaration -> methodDeclaration.getDeclarationAsString(true, true, true))
-                        .collect(
-                            Collectors.toList()));
-
-                    return classMethodMap;
-                }
-            };
+        final GenericVisitorAdapter<Map<String, List<String>>, Object> classMethodVisitorAdapter =
+            new ClassMethodVisitorAdapter();
 
         LOG.info("Reading and parsing java source code from ground truth");
 
@@ -366,54 +296,99 @@ public class ParsingServiceImpl implements ParsingService
 
         final Map<String, List<String>> parsedMethodNamesPerClass = new HashMap<>();
 
-        projectRoot.getSourceRoots().forEach(sourceRoot ->
+        for (SourceRoot sourceRoot : projectRoot.getSourceRoots())
         {
-            try
-            {
-                sourceRoot.tryToParse();
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-            }
+            sourceRoot.tryToParse();
 
-            sourceRoot.getCompilationUnits()
-                .forEach(unit -> {
-                    final Map<String, List<String>> visit = genericVisitorAdapter.visit(unit, null);
+            for (CompilationUnit unit : sourceRoot.getCompilationUnits())
+            {
+                final Map<String, List<String>> classMethodMap = classMethodVisitorAdapter.visit(unit, null);
 
-                    if (visit != null)
+                if (classMethodMap != null)
+                {
+                    parsedMethodNamesPerClass.putAll(classMethodMap);
+                }
+            }
+        }
+        return parsedMethodNamesPerClass;
+    }
+
+    //TODO hard coded (and wrong) directories, move file reading to file service
+    private List<ClassContainer> readVisitedClassesFromEditorTraceFiles() throws IOException
+    {
+        final String userRunDir = System.getProperties().getProperty("user.dir");
+        final String pathToWrite = userRunDir + "/src/test/resources/";
+        final JSONParser jsonParser = new JSONParser();
+        final List<ClassContainer> classContainerList = new ArrayList<>();
+
+        try (Stream<Path> pathsOfFiles = Files.walk(Paths.get(pathToWrite), 1))
+        {
+            pathsOfFiles.forEach(path -> {
+                if (!Files.isDirectory(path))
+                {
+                    try (FileReader fileReader = new FileReader(path.toFile()))
                     {
-                        parsedMethodNamesPerClass.putAll(visit);
+                        final JSONObject jsonObject = (JSONObject) jsonParser.parse(fileReader);
+                        final String fullFileName = (String) jsonObject.get("fileName");
+
+                        if (StringUtils.containsIgnoreCase(fullFileName, ".java"))
+                        {
+                            final String fullJavaFilePathWithoutExtension =
+                                StringUtils.substringBefore(fullFileName, ".java");
+                            final String subString =
+                                StringUtils.substringAfter(fullJavaFilePathWithoutExtension, "java\\");
+                            final String[] split = StringUtils.split(subString, "\\");
+                            final String fullyQualifiedClassName = split != null ? StringUtils.join(split, '.') : "";
+                            final String packageName = StringUtils.substringBeforeLast(fullyQualifiedClassName, ".");
+                            final String simpleClassName = StringUtils.substringAfterLast(fullyQualifiedClassName, ".");
+                            final ClassContainer classContainer = new ClassContainer();
+                            final String opened = (String) jsonObject.get("opened");
+                            classContainer.setOpenedFrom(Long.valueOf(opened));
+                            final String closed = (String) jsonObject.get("closed");
+                            classContainer.setClosedAt(Long.valueOf(closed));
+                            classContainer.setFullyQualifiedClassName(fullyQualifiedClassName);
+                            classContainer.setSimpleClassName(simpleClassName);
+                            classContainer.setPackageName(packageName);
+                            classContainerList.add(classContainer);
+                        }
                     }
-                });
-        });
+                    catch (NumberFormatException | ParseException | IOException e)
+                    {
+                        LOG.error("exception parsing trace editor files occurred:", e);
+                    }
+                }
 
-        LOG.info("Finding class matching candidates and creating class/methods map for method name similarity search");
+            });
+        }
 
-        final List<ClassContainer> visitedClasses = readVisitedClassesFromEditorTraceFiles();
+        return classContainerList;
+    }
 
+    private List<ClassContainer> addParsedMethodsToVisitedClasses(Map<String, List<String>> parsedMethodNamesPerClass,
+        List<ClassContainer> visitedClassesFromTraceEditor)
+    {
         parsedMethodNamesPerClass.forEach((className, methodNames) ->
             methodNames.forEach(methodName ->
-                visitedClasses.forEach(classContainer ->
-                {
-                    if (StringUtils.equals(className, classContainer.getFullyQualifiedClassName()))
+                visitedClassesFromTraceEditor.forEach(classContainer ->
                     {
-                        classContainer.setMethodList(parsedMethodNamesPerClass.get(className));
+                        if (StringUtils.equals(className, classContainer.getFullyQualifiedClassName()))
+                        {
+                            classContainer.setMethodNameList(parsedMethodNamesPerClass.get(className));
+                        }
                     }
-                })));
-
-        return visitedClasses;
+                )
+            )
+        );
+        return visitedClassesFromTraceEditor;
     }
 
     private List<MethodContainer> calculateTotalVisibilityDurationPerMatchedMethod(
         List<MethodContainer> matchedMethodList)
     {
 
-        final Set<Pair<String, String>> classMethodPairSet = new HashSet<>();
-
-        matchedMethodList.forEach(methodContainer -> {
-            classMethodPairSet.add(Pair.of(methodContainer.getClassName(), methodContainer.getMethodName()));
-        });
+        final Set<Pair<String, String>> classMethodPairSet = matchedMethodList.stream()
+            .map(methodContainer -> Pair.of(methodContainer.getClassName(), methodContainer.getMethodName()))
+            .collect(Collectors.toSet());
 
         matchedMethodList.sort(Comparator.comparingLong(MethodContainer::getDuration));
 
@@ -459,6 +434,7 @@ public class ParsingServiceImpl implements ParsingService
                     previousFrame = 0L;
                 }
             }
+
             final MethodContainer totalDurationPerMethodContainer = new MethodContainer();
             totalDurationPerMethodContainer.setMethodName(methodName);
             totalDurationPerMethodContainer.setDuration(totalDurationPerMethod);
@@ -482,9 +458,10 @@ public class ParsingServiceImpl implements ParsingService
         extractedRawMethodContainerList.sort(Comparator.comparingLong(MethodContainer::getDuration));
 
         final List<MethodContainer> matchedMethodList = new ArrayList<>();
+
         for (ClassContainer classContainer : matchedClassContainer)
         {
-            for (String sourceCodeMethodName : classContainer.getMethodList())
+            for (String sourceCodeMethodName : classContainer.getMethodNameList())
             {
                 for (MethodContainer extractedMethodContainer : extractedRawMethodContainerList)
                 {
@@ -503,8 +480,8 @@ public class ParsingServiceImpl implements ParsingService
                         final Long closedAt = classContainer.getClosedAt();
 
                         final Long extractedDuration = extractedMethodContainer.getDuration();
-
                         if (StringUtils.containsIgnoreCase(possibleMethodName, sourceCodeMethodShort))
+                        {
                             if ((extractedDuration >= openedFrom) && (extractedDuration <= closedAt))
                             {
                                 final JaccardSimilarity jaccardSimilarity = new JaccardSimilarity();
@@ -531,68 +508,12 @@ public class ParsingServiceImpl implements ParsingService
                                         matchedMethodList.add(matchedMethodContainer);
                                     }
                                 }
-
                             }
+                        }
                     }
                 }
             }
         }
-
         return matchedMethodList;
-    }
-
-    private List<ClassContainer> readVisitedClassesFromEditorTraceFiles()
-    {
-        final String userRunDir = System.getProperties().getProperty("user.dir");
-        final String pathToWrite = userRunDir + "/src/test/resources/";
-        final JSONParser jsonParser = new JSONParser();
-        final List<ClassContainer> classContainerList = new ArrayList<>();
-
-        try (Stream<Path> pathsOfFiles = Files.walk(Paths.get(pathToWrite), 1))
-        {
-            pathsOfFiles.forEach(path -> {
-                if (!Files.isDirectory(path))
-                {
-                    try (FileReader fileReader = new FileReader(path.toFile()))
-                    {
-                        final JSONObject jsonObject = (JSONObject) jsonParser.parse(fileReader);
-                        final String fullFileName = (String) jsonObject.get("fileName");
-                        final String fileName = StringUtils.substringAfterLast(fullFileName, "\\");
-                        if (StringUtils.containsIgnoreCase(fullFileName, ".java"))
-                        {
-                            final String fullJavaFilePathWithoutExtension =
-                                StringUtils.substringBefore(fullFileName, ".java");
-                            final String subString =
-                                StringUtils.substringAfter(fullJavaFilePathWithoutExtension, "java\\");
-                            final String[] split = StringUtils.split(subString, "\\");
-                            final String fullyQualifiedClassName = split != null ? StringUtils.join(split, '.') : "";
-                            final String packageName = StringUtils.substringBeforeLast(fullyQualifiedClassName, ".");
-                            final String simpleClassName = StringUtils.substringAfterLast(fullyQualifiedClassName, ".");
-                            final ClassContainer classContainer = new ClassContainer();
-                            final String opened = (String) jsonObject.get("opened");
-                            classContainer.setOpenedFrom(Long.valueOf(opened));
-                            final String closed = (String) jsonObject.get("closed");
-                            classContainer.setClosedAt(Long.valueOf(closed));
-                            classContainer.setFullyQualifiedClassName(fullyQualifiedClassName);
-                            classContainer.setSimpleClassName(simpleClassName);
-                            classContainer.setPackageName(packageName);
-                            classContainerList.add(classContainer);
-                        }
-                    }
-
-                    catch (Exception e)
-                    {
-                        e.printStackTrace();
-                    }
-                }
-
-            });
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-
-        return classContainerList;
     }
 }

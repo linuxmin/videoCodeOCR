@@ -1,27 +1,27 @@
 @startuml
 package com.payment.app.web.rest{
-class "CardReaderResource" as compaymentappwebrestCardReaderResource {
+class "CardReaderResource" as compaymentappwebrestCardReaderResource #BLUE-BLUE {
 public Boolean validateCard(@PathVariable String cardNumber, @PathVariable String pin)
 public Debit debitCard(@PathVariable Double price, @PathVariable String cardNumber)
 }
 }
 package com.payment.app.service{
-class "CardReaderManager" as compaymentappserviceCardReaderManager {
+class "CardReaderManager" as compaymentappserviceCardReaderManager #GREEN-BLUE {
 public Boolean validateCard(String cardNumber, String pin)
 public Debit debitCard(Double price, String cardNumber)
 }
 }
 package com.payment.app{
-class "PaymentApp" as compaymentappPaymentApp {
+class "PaymentApp" as compaymentappPaymentApp #GREEN-GREEN {
 public void initApplication()
 public static void main(String[] args)
 private static void logApplicationStartup(Environment env)
 }
 }
 package com.banking.app.security{
-class "AuthoritiesConstants" as combankingappsecurityAuthoritiesConstants {
+class "AuthoritiesConstants" as combankingappsecurityAuthoritiesConstants #YELLOW-ORANGE {
 }
-class "SecurityUtils" as combankingappsecuritySecurityUtils {
+class "SecurityUtils" as combankingappsecuritySecurityUtils #ORANGE-RED {
 public static Optional<String> getCurrentUserLogin()
 public static Optional<String> getCurrentUserJWT()
 public static boolean isAuthenticated()
@@ -29,9 +29,9 @@ public static boolean isCurrentUserInRole(String authority)
 }
 }
 package com.payment.app.security{
-class "AuthoritiesConstants" as compaymentappsecurityAuthoritiesConstants {
+class "AuthoritiesConstants" as compaymentappsecurityAuthoritiesConstants #GREEN-GREEN {
 }
-class "SecurityUtils" as compaymentappsecuritySecurityUtils {
+class "SecurityUtils" as compaymentappsecuritySecurityUtils #RED-GREEN {
 public static Optional<String> getCurrentUserLogin()
 public static Optional<String> getCurrentUserJWT()
 public static boolean isAuthenticated()

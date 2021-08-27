@@ -1,6 +1,7 @@
 package at.javaprofi.ocr.io.backend.service;
 
 import java.awt.*;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,6 +20,8 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +34,6 @@ import at.javaprofi.ocr.frame.api.dto.MethodContainer;
 import at.javaprofi.ocr.io.api.StorageProperties;
 import at.javaprofi.ocr.io.api.dto.PathContainer;
 import at.javaprofi.ocr.io.api.service.FileService;
-import at.javaprofi.ocr.parsing.api.dto.GraphNodeLink;
 
 @Service
 public class FileServiceImpl implements FileService
@@ -101,7 +103,7 @@ public class FileServiceImpl implements FileService
             }
 
             Path destinationFile = videoLocation.resolve(
-                Paths.get(originalFilename))
+                    Paths.get(originalFilename))
                 .normalize().toAbsolutePath();
 
             if (Files.exists(destinationFile, LinkOption.NOFOLLOW_LINKS))
@@ -159,9 +161,9 @@ public class FileServiceImpl implements FileService
             LOG.debug("Loading vizData from {}", frameLocation);
             final List<Path> vizDataPaths =
                 Files.find(frameLocation, 2, (p, a) -> {
-                    final String currentPath = p.getFileName().toString();
-                    return Files.isDirectory(p) && StringUtils.equals(currentPath, "vizData");
-                })
+                        final String currentPath = p.getFileName().toString();
+                        return Files.isDirectory(p) && StringUtils.equals(currentPath, "vizData");
+                    })
                     .collect(Collectors.toList());
 
             final List<Path> vizFilesPathList = new ArrayList<>();
@@ -301,7 +303,6 @@ public class FileServiceImpl implements FileService
     public void writeVisualizationDataToJSON(PathContainer pathContainer, List<MethodContainer> matchedMethodList,
         List<MethodContainer> totalDurationMethodList)
     {
-        writeClassSourceTargetToJSON(matchedMethodList, pathContainer.getGraphLinkPath());
         writeMethodContainerListToJSON(matchedMethodList, pathContainer.getMethodMatchesPath());
         writeMethodContainerListToJSON(totalDurationMethodList, pathContainer.getTotalDurationPath());
     }
@@ -342,57 +343,20 @@ public class FileServiceImpl implements FileService
         }
     }
 
-    private void writeClassSourceTargetToJSON(List<MethodContainer> matchedMethodList, Path visualizationPath)
+    @Override
+    public JSONArray readExtractedLinesFromJSON(PathContainer pathContainer)
     {
+        final JSONParser jsonParser = new JSONParser();
 
-        final List<GraphNodeLink> distinctLinksList = new ArrayList<>();
-
-        String sourceClass = null;
-        Long sourceDuration = 0L;
-
-        for (MethodContainer methodContainer : matchedMethodList)
+        try (FileReader fileReader = new FileReader(pathContainer.getExtractedLinesPath().toFile()))
         {
-            if (sourceClass != null && !StringUtils.equals(sourceClass, methodContainer.getClassName()))
-            {
-                final GraphNodeLink graphNodeLink = new GraphNodeLink();
-                graphNodeLink.setSourceClass(sourceClass);
-                graphNodeLink.setSourceDuration(sourceDuration);
-                graphNodeLink.setTargetClass(methodContainer.getClassName());
-                graphNodeLink.setTargetDuration(methodContainer.getDuration());
-
-                distinctLinksList.add(graphNodeLink);
-            }
-
-            sourceClass = methodContainer.getClassName();
-            sourceDuration = methodContainer.getDuration();
+            return (JSONArray) jsonParser.parse(fileReader);
+        }
+        catch (IOException | ParseException e)
+        {
+            LOG.error("exception occurred when reading extracting lines from json", e);
         }
 
-        try (FileWriter file = new FileWriter(visualizationPath.toFile()))
-        {
-            final JSONArray jsonClassContainerList = new JSONArray();
-
-            for (int i = 0; i < distinctLinksList.size(); i++)
-            {
-                final JSONObject jsonClassContainer = new JSONObject();
-                final GraphNodeLink currentNodeLink = distinctLinksList.get(i);
-
-                jsonClassContainer.put("id", i);
-                jsonClassContainer.put("source", currentNodeLink.getSourceClass());
-                jsonClassContainer.put("source_duration", currentNodeLink.getSourceDuration());
-                jsonClassContainer.put("target", currentNodeLink.getTargetClass());
-                jsonClassContainer.put("target_duration", currentNodeLink.getTargetDuration());
-
-                jsonClassContainerList.add(jsonClassContainer);
-            }
-
-            file.write(jsonClassContainerList.toJSONString());
-            file.flush();
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException("writing source target list to json failed", e);
-        }
-
+        return null;
     }
-
 }
