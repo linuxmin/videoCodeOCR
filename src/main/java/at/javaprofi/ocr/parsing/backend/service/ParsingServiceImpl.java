@@ -1,6 +1,7 @@
 package at.javaprofi.ocr.parsing.backend.service;
 
 import java.awt.*;
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -44,6 +45,7 @@ import at.javaprofi.ocr.io.api.service.FileService;
 import at.javaprofi.ocr.parsing.api.ClassMethodVisitorAdapter;
 import at.javaprofi.ocr.parsing.api.enums.ColorForTime;
 import at.javaprofi.ocr.parsing.api.service.ParsingService;
+import net.sourceforge.plantuml.SourceStringReader;
 
 @Service
 public class ParsingServiceImpl implements ParsingService
@@ -148,10 +150,6 @@ public class ParsingServiceImpl implements ParsingService
         List<MethodContainer> totalDurationMethodList,
         List<MethodContainer> matchedMethodList) throws IOException
     {
-        final StringBuilder stringBuilder = new StringBuilder();
-
-        stringBuilder.append("@startuml").append('\n');
-
         totalDurationMethodList.forEach(methodContainer -> visitedClassContainerList.forEach(classContainer -> {
             if (StringUtils.equals(methodContainer.getClassName(), classContainer.getFullyQualifiedClassName()))
             {
@@ -159,15 +157,34 @@ public class ParsingServiceImpl implements ParsingService
             }
         }));
 
+        final StringBuilder stringBuilder = new StringBuilder();
+
+        stringBuilder.append("@startuml")
+            .append('\n')
+            .append("hide empty members")
+            .append('\n')
+            .append("skinparam roundcorner 20")
+            .append('\n')
+            .append("skinparam linetype ortho")
+            .append('\n')
+            .append("skinparam nodesep 200")
+            .append('\n')
+            .append("skinparam ranksep 200")
+            .append('\n');
+
         buildPlantUmlClasses(visitedClassContainerList, totalDurationMethodList, stringBuilder);
         buildPlantUmlClassLinks(visitedClassContainerList, stringBuilder);
         buildPlantUmlMethodLinks(matchedMethodList, stringBuilder);
-
         stringBuilder.append("@enduml");
+
+        final String plantUmlString = stringBuilder.toString();
+
+        final SourceStringReader sourceStringReader = new SourceStringReader(plantUmlString);
+        sourceStringReader.generateImage(new File("plantuml.png"));
 
         try (FileWriter file = new FileWriter("plantuml.txt"))
         {
-            file.write(stringBuilder.toString());
+            file.write(plantUmlString);
         }
     }
 
@@ -175,6 +192,8 @@ public class ParsingServiceImpl implements ParsingService
     {
         String previousClass = null;
         String previousMethodAlias = null;
+
+        final Map<Pair<String, String>, Integer> prevClassMethodCurrMethodPairLinkCuntMap = new HashMap<>();
 
         for (MethodContainer methodContainer : matchedMethodList)
         {
@@ -187,18 +206,54 @@ public class ParsingServiceImpl implements ParsingService
                 if (!StringUtils.equals(currentMethodAlias, previousMethodAlias) ||
                     !StringUtils.equals(currentClass, previousClass))
                 {
-                    stringBuilder.append(StringUtils.remove(previousClass, "."))
-                        .append("::")
-                        .append(previousMethodAlias)
-                        .append("->")
-                        .append(StringUtils.remove(currentClass, "."))
-                        .append("::").append(currentMethodAlias).append('\n');
+                    if (StringUtils.equals(currentClass, previousClass))
+                    {
+                        final Pair<String, String> prevClassMethodCurrMethodPair =
+                            Pair.of(StringUtils.remove(currentClass, ".") + ":" + previousMethodAlias,
+                                currentMethodAlias);
+
+                        if (!prevClassMethodCurrMethodPairLinkCuntMap.containsKey(prevClassMethodCurrMethodPair))
+                        {
+                            prevClassMethodCurrMethodPairLinkCuntMap.put(prevClassMethodCurrMethodPair, 1);
+                        }
+                        else
+                        {
+                            Integer currentValue =
+                                prevClassMethodCurrMethodPairLinkCuntMap.get(prevClassMethodCurrMethodPair);
+                            prevClassMethodCurrMethodPairLinkCuntMap.replace(prevClassMethodCurrMethodPair,
+                                currentValue,
+                                ++currentValue);
+                        }
+                    }
+                    else
+                    {
+                        stringBuilder.append(StringUtils.remove(previousClass, "."))
+                            .append("::")
+                            .append(previousMethodAlias)
+                            .append("->")
+                            .append(StringUtils.remove(currentClass, "."))
+                            .append("::").append(currentMethodAlias).append('\n');
+                    }
                 }
             }
 
             previousClass = currentClass;
             previousMethodAlias = currentMethodAlias;
         }
+
+        prevClassMethodCurrMethodPairLinkCuntMap.forEach((previousCurrentMethodPair, linkCount) -> {
+            final String previousMethod = previousCurrentMethodPair.getLeft();
+            final String currentMethod = previousCurrentMethodPair.getRight();
+
+            final String className = StringUtils.substringBefore(previousMethod, ":");
+            final String previousMethodName = StringUtils.substringAfter(previousMethod, ":");
+            stringBuilder.append(className)
+                .append("::")
+                .append(previousMethodName)
+                .append("-[#black]>")
+                .append(className)
+                .append("::").append(currentMethod).append(" : x").append(linkCount).append('\n');
+        });
     }
 
     private void buildPlantUmlClassLinks(List<ClassContainer> visitedClassContainerList, StringBuilder stringBuilder)
@@ -213,7 +268,12 @@ public class ParsingServiceImpl implements ParsingService
 
             if (previousClass != null && !StringUtils.equals(currentClass, previousClass))
             {
-                stringBuilder.append(previousClass).append("..>").append(currentClass).append('\n');
+                stringBuilder.append(previousClass)
+                    .append("..>")
+                    .append(currentClass)
+                    .append(" :")
+                    .append(classContainer.getClosedAt())
+                    .append('\n');
             }
 
             previousClass = currentClass;
@@ -276,6 +336,7 @@ public class ParsingServiceImpl implements ParsingService
 
                     classContainer.getMethodNameList().forEach(
                         method -> {
+                            stringBuilder.append("..").append('\n');
                             totalDurationMethodList.stream()
                                 .filter(methodContainer -> StringUtils.equals(methodContainer.getMethodName(), method)
                                     && StringUtils.equals(methodContainer.getClassName(),
@@ -283,7 +344,7 @@ public class ParsingServiceImpl implements ParsingService
                                 .findFirst()
                                 .ifPresentOrElse(methodContainer -> stringBuilder.append("<size:")
                                     .append(scale(methodContainer.getDuration(), minTotalDuration, maxTotalDuration))
-                                    .append(">"), () -> stringBuilder.append("<color:white>"));
+                                    .append(">"), () -> stringBuilder.append("<size:1>"));
                             stringBuilder
                                 .append(method)
                                 .append('\n');

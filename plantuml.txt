@@ -1,20 +1,32 @@
 @startuml
+hide empty members
+skinparam roundcorner 20
+skinparam linetype ortho
+skinparam nodesep 200
+skinparam ranksep 200
 package com.payment.app.web.rest{
 class "CardReaderResource" as compaymentappwebrestCardReaderResource #BLUE-BLUE {
+..
 <size:15>public Boolean validateCard(@PathVariable String cardNumber, @PathVariable String pin)
+..
 <size:9>public Debit debitCard(@PathVariable Double price, @PathVariable String cardNumber)
 }
 }
 package com.payment.app.service{
 class "CardReaderManager" as compaymentappserviceCardReaderManager #GREEN-BLUE {
+..
 <size:40>public Boolean validateCard(String cardNumber, String pin)
+..
 <size:13>public Debit debitCard(Double price, String cardNumber)
 }
 }
 package com.payment.app{
 class "PaymentApp" as compaymentappPaymentApp #GREEN-GREEN {
+..
 <size:8>public void initApplication()
+..
 <size:9>public static void main(String[] args)
+..
 <size:11>private static void logApplicationStartup(Environment env)
 }
 }
@@ -22,9 +34,13 @@ package com.banking.app.security{
 class "AuthoritiesConstants" as combankingappsecurityAuthoritiesConstants #YELLOW-ORANGE {
 }
 class "SecurityUtils" as combankingappsecuritySecurityUtils #ORANGE-RED {
-<color:white>public static Optional<String> getCurrentUserLogin()
-<color:white>public static Optional<String> getCurrentUserJWT()
+..
+<size:1>public static Optional<String> getCurrentUserLogin()
+..
+<size:1>public static Optional<String> getCurrentUserJWT()
+..
 <size:10>public static boolean isAuthenticated()
+..
 <size:26>public static boolean isCurrentUserInRole(String authority)
 }
 }
@@ -32,47 +48,32 @@ package com.payment.app.security{
 class "AuthoritiesConstants" as compaymentappsecurityAuthoritiesConstants #GREEN-GREEN {
 }
 class "SecurityUtils" as compaymentappsecuritySecurityUtils #RED-GREEN {
-<color:white>public static Optional<String> getCurrentUserLogin()
-<color:white>public static Optional<String> getCurrentUserJWT()
-<color:white>public static boolean isAuthenticated()
-<color:white>public static boolean isCurrentUserInRole(String authority)
+..
+<size:1>public static Optional<String> getCurrentUserLogin()
+..
+<size:1>public static Optional<String> getCurrentUserJWT()
+..
+<size:1>public static boolean isAuthenticated()
+..
+<size:1>public static boolean isCurrentUserInRole(String authority)
 }
 }
-combankingappsecurityAuthoritiesConstants..>combankingappsecuritySecurityUtils
-combankingappsecuritySecurityUtils..>compaymentappsecuritySecurityUtils
-compaymentappsecuritySecurityUtils..>compaymentappsecurityAuthoritiesConstants
-compaymentappsecurityAuthoritiesConstants..>compaymentappPaymentApp
-compaymentappPaymentApp..>compaymentappserviceCardReaderManager
-compaymentappserviceCardReaderManager..>compaymentappwebrestCardReaderResource
-compaymentappwebrestCardReaderResource..>compaymentappserviceCardReaderManager
-combankingappsecuritySecurityUtils::isAuthenticated->combankingappsecuritySecurityUtils::isCurrentUserInRole
+combankingappsecurityAuthoritiesConstants..>combankingappsecuritySecurityUtils :87268
+combankingappsecuritySecurityUtils..>compaymentappsecuritySecurityUtils :93978
+compaymentappsecuritySecurityUtils..>compaymentappsecurityAuthoritiesConstants :101183
+compaymentappsecurityAuthoritiesConstants..>compaymentappPaymentApp :117004
+compaymentappPaymentApp..>compaymentappserviceCardReaderManager :206127
+compaymentappserviceCardReaderManager..>compaymentappwebrestCardReaderResource :221836
+compaymentappwebrestCardReaderResource..>compaymentappserviceCardReaderManager :221836
 combankingappsecuritySecurityUtils::isCurrentUserInRole->compaymentappPaymentApp::initApplication
-compaymentappPaymentApp::initApplication->compaymentappPaymentApp::main
-compaymentappPaymentApp::main->compaymentappPaymentApp::logApplicationStartup
-compaymentappPaymentApp::logApplicationStartup->compaymentappPaymentApp::main
-compaymentappPaymentApp::main->compaymentappPaymentApp::logApplicationStartup
 compaymentappPaymentApp::logApplicationStartup->compaymentappserviceCardReaderManager::validateCard
-compaymentappserviceCardReaderManager::validateCard->compaymentappserviceCardReaderManager::debitCard
-compaymentappserviceCardReaderManager::debitCard->compaymentappserviceCardReaderManager::validateCard
-compaymentappserviceCardReaderManager::validateCard->compaymentappserviceCardReaderManager::debitCard
-compaymentappserviceCardReaderManager::debitCard->compaymentappserviceCardReaderManager::validateCard
-compaymentappserviceCardReaderManager::validateCard->compaymentappserviceCardReaderManager::debitCard
-compaymentappserviceCardReaderManager::debitCard->compaymentappserviceCardReaderManager::validateCard
-compaymentappserviceCardReaderManager::validateCard->compaymentappserviceCardReaderManager::debitCard
-compaymentappserviceCardReaderManager::debitCard->compaymentappserviceCardReaderManager::validateCard
 compaymentappserviceCardReaderManager::validateCard->compaymentappwebrestCardReaderResource::validateCard
-compaymentappwebrestCardReaderResource::validateCard->compaymentappwebrestCardReaderResource::debitCard
-compaymentappwebrestCardReaderResource::debitCard->compaymentappwebrestCardReaderResource::validateCard
-compaymentappwebrestCardReaderResource::validateCard->compaymentappwebrestCardReaderResource::debitCard
-compaymentappwebrestCardReaderResource::debitCard->compaymentappwebrestCardReaderResource::validateCard
-compaymentappwebrestCardReaderResource::validateCard->compaymentappwebrestCardReaderResource::debitCard
-compaymentappwebrestCardReaderResource::debitCard->compaymentappwebrestCardReaderResource::validateCard
-compaymentappwebrestCardReaderResource::validateCard->compaymentappwebrestCardReaderResource::debitCard
-compaymentappwebrestCardReaderResource::debitCard->compaymentappwebrestCardReaderResource::validateCard
-compaymentappwebrestCardReaderResource::validateCard->compaymentappwebrestCardReaderResource::debitCard
-compaymentappwebrestCardReaderResource::debitCard->compaymentappwebrestCardReaderResource::validateCard
-compaymentappwebrestCardReaderResource::validateCard->compaymentappwebrestCardReaderResource::debitCard
-compaymentappwebrestCardReaderResource::debitCard->compaymentappwebrestCardReaderResource::validateCard
-compaymentappwebrestCardReaderResource::validateCard->compaymentappwebrestCardReaderResource::debitCard
-compaymentappwebrestCardReaderResource::debitCard->compaymentappwebrestCardReaderResource::validateCard
+compaymentappPaymentApp::initApplication-[#black]>compaymentappPaymentApp::main : x1
+compaymentappPaymentApp::logApplicationStartup-[#black]>compaymentappPaymentApp::main : x1
+compaymentappserviceCardReaderManager::validateCard-[#black]>compaymentappserviceCardReaderManager::debitCard : x4
+compaymentappserviceCardReaderManager::debitCard-[#black]>compaymentappserviceCardReaderManager::validateCard : x4
+combankingappsecuritySecurityUtils::isAuthenticated-[#black]>combankingappsecuritySecurityUtils::isCurrentUserInRole : x1
+compaymentappwebrestCardReaderResource::validateCard-[#black]>compaymentappwebrestCardReaderResource::debitCard : x7
+compaymentappPaymentApp::main-[#black]>compaymentappPaymentApp::logApplicationStartup : x2
+compaymentappwebrestCardReaderResource::debitCard-[#black]>compaymentappwebrestCardReaderResource::validateCard : x7
 @enduml
