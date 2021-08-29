@@ -43,18 +43,17 @@ public class FileUploadController
     public String listUploadedFiles(Model model)
     {
         model.addAttribute("files", fileService.loadVideos().map(
-            path -> MvcUriComponentsBuilder.fromMethodName(FileUploadController.class,
-                "serveFile", path.getFileName().toString()).build())
+                path -> MvcUriComponentsBuilder.fromMethodName(FileUploadController.class,
+                    "serveFile", path.getFileName().toString()).build())
             .collect(Collectors.toList()));
 
         model.addAttribute("vizFiles", fileService.loadVisualizationPathsForVideo().stream().map(
-            path -> MvcUriComponentsBuilder.fromMethodName(FileUploadController.class,
-                "serveVizFile", path.toString()).build())
+                path -> MvcUriComponentsBuilder.fromMethodName(FileUploadController.class,
+                    "serveVizFile", path.toString()).build())
             .collect(Collectors.toList()));
 
         return "uploadForm";
     }
-
 
     @GetMapping("/files/{filename:.+}")
     @ResponseBody
@@ -100,7 +99,8 @@ public class FileUploadController
     }
 
     @PostMapping("/pupil")
-    public String handlePupilDataUpload(@RequestParam("file") MultipartFile file, @RequestParam("fileName") String fileName)
+    public String handlePupilDataUpload(@RequestParam("file") MultipartFile file,
+        @RequestParam("fileName") String fileName)
     {
         fileService.storePupilFile(file, fileName);
 
@@ -114,6 +114,22 @@ public class FileUploadController
         ex.printStackTrace();
         redirectAttributes.addFlashAttribute("message",
             ex.getMessage());
+
+        return "redirect:/video";
+    }
+
+    @PostMapping(value = "/dropPupilFiles")
+    public String handlePupilFilesDeletion(@RequestParam("fileName") String fileName)
+    {
+        fileService.deletePupilFilesForVideo(fileName);
+
+        return "redirect:/video";
+    }
+
+    @PostMapping(value = "/dropVideo")
+    public String handleVideoDeletion(@RequestParam("fileName") String fileName)
+    {
+        fileService.deleteVideo(fileName);
 
         return "redirect:/video";
     }

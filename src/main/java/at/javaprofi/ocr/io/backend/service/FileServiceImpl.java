@@ -12,10 +12,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONArray;
@@ -129,12 +132,6 @@ public class FileServiceImpl implements FileService
         }
 
         LOG.info("uploading {} successful", file.getOriginalFilename());
-    }
-
-    private long getLastModified(Path path)
-    {
-        return path.toFile().getAbsoluteFile()
-            .lastModified();
     }
 
     @Override
@@ -261,6 +258,15 @@ public class FileServiceImpl implements FileService
     {
         LOG.info("retrieving and creating directories if not exist for file: {}", fileName);
 
+        final PathContainer pathContainer = createPathContainerForVideo(fileName);
+
+        createDirectoriesFromPathContainer(pathContainer);
+
+        return pathContainer;
+    }
+
+    private PathContainer createPathContainerForVideo(String fileName)
+    {
         final Path videoFileName = Paths.get(fileName).getFileName();
         final Path videoPath = videoLocation.resolve(videoFileName);
         final Path framePath = frameLocation.resolve(FilenameUtils.removeExtension(videoFileName.toString()));
@@ -270,16 +276,34 @@ public class FileServiceImpl implements FileService
         final Path extractedLinesPath = Paths.get(visualizationPathString, "extracted_lines.json");
         final Path methodMatchesPath = Paths.get(visualizationPathString, "method_matches.json");
         final Path totalDurationPath = Paths.get(visualizationPathString, "total_duration.json");
-        final Path graphLinkPath = Paths.get(visualizationPathString, "graph_link.json");
+        final Path traceEditorPath = Paths.get(visualizationPathString, "trace_editor.txt");
 
+        final PathContainer pathContainer = new PathContainer.PathContainerBuilder().videoPath(videoPath)
+            .framesPath(framePath)
+            .visualizationPath(visualizationPath)
+            .extractedLinesPath(extractedLinesPath)
+            .methodMatchesPath(methodMatchesPath)
+            .totalDurationPath(totalDurationPath)
+            .traceEditorPath(traceEditorPath)
+            .build();
+        return pathContainer;
+    }
+
+    private void createDirectoriesFromPathContainer(PathContainer pathContainer)
+    {
         try
         {
-            if (Files.notExists(framePath.toAbsolutePath()))
+            final Path framesPath = pathContainer.getFramesPath();
+
+            if (framesPath != null && Files.notExists(framesPath.toAbsolutePath()))
             {
-                Files.createDirectories(framePath.toAbsolutePath());
+                Files.createDirectories(framesPath.toAbsolutePath());
 
             }
-            if (Files.notExists(visualizationPath))
+
+            final Path visualizationPath = pathContainer.getVisualizationPath();
+
+            if (visualizationPath != null && Files.notExists(visualizationPath))
             {
                 Files.createDirectories(visualizationPath);
             }
@@ -288,15 +312,6 @@ public class FileServiceImpl implements FileService
         {
             throw new RuntimeException("Exception while creating frame/json directories", e);
         }
-
-        return new PathContainer.PathContainerBuilder().videoPath(videoPath)
-            .framesPath(framePath)
-            .visualizationPath(visualizationPath)
-            .extractedLinesPath(extractedLinesPath)
-            .methodMatchesPath(methodMatchesPath)
-            .totalDurationPath(totalDurationPath)
-            .graphLinkPath(graphLinkPath)
-            .build();
     }
 
     @Override
@@ -359,4 +374,39 @@ public class FileServiceImpl implements FileService
 
         return null;
     }
+
+    @Override
+    public void deletePupilFilesForVideo(String fileName)
+    {
+        LOG.info("deleting pupil files for video: {}", fileName);
+
+        final PathContainer pathContainerForVideo = createPathContainerForVideo(fileName);
+        final Path visualizationPath = pathContainerForVideo.getVisualizationPath();
+
+        deleteFilesAndDirectories(Collections.singletonList(visualizationPath));
+    }
+
+    @Override
+    public void deleteVideo(String fileName)
+    {
+        LOG.info("deleting all files for video: {}", fileName);
+
+        final PathContainer pathContainerForVideo = createPathContainerForVideo(fileName);
+
+        deleteFilesAndDirectories(
+            Arrays.asList(pathContainerForVideo.getVideoPath(), pathContainerForVideo.getFramesPath()));
+
+    }
+
+    private void deleteFilesAndDirectories(List<Path> pathsToDelete)
+    {
+        pathsToDelete.forEach(path ->
+        {
+            if (!FileUtils.deleteQuietly(path.toFile()))
+            {
+                LOG.warn("deletion of file/directory was not successful: {} ", path);
+            }
+        });
+    }
+
 }

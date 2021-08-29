@@ -88,4 +88,8 @@ public interface FileService
     void storePupilFile(MultipartFile file, String fileName);
 
     JSONArray readExtractedLinesFromJSON(PathContainer pathContainer);
+
+    void deletePupilFilesForVideo(String fileName);
+
+    void deleteVideo(String fileName);
 }

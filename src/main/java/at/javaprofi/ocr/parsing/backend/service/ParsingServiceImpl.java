@@ -2,7 +2,6 @@ package at.javaprofi.ocr.parsing.backend.service;
 
 import java.awt.*;
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -127,7 +125,7 @@ public class ParsingServiceImpl implements ParsingService
         List<MethodContainer> extractedRawMethodContainerList) throws IOException
     {
         final List<ClassContainer> visitedClassContainerList =
-            parseCodeFromGroundTruthAndBuildMatchingClassContainerList();
+            parseCodeFromGroundTruthAndBuildMatchingClassContainerList(pathContainer);
 
         final List<MethodContainer> matchedMethodList =
             calculateMatchingSourceMethodsOfClassCandidates(extractedRawMethodContainerList, visitedClassContainerList);
@@ -364,12 +362,14 @@ public class ParsingServiceImpl implements ParsingService
         return Math.round((32 * (valueIn - minTotalDuration) / (maxTotalDuration - minTotalDuration)) + 8);
     }
 
-    private List<ClassContainer> parseCodeFromGroundTruthAndBuildMatchingClassContainerList() throws IOException
+    private List<ClassContainer> parseCodeFromGroundTruthAndBuildMatchingClassContainerList(
+        PathContainer pathContainer) throws IOException
     {
         LOG.info("Finding class matching candidates and creating class/methods map for method name similarity search");
 
         final Map<String, List<String>> parsedMethodNamesPerClass = buildParsedClassMethodMap();
-        final List<ClassContainer> visitedClassesFromTraceEditor = readVisitedClassesFromEditorTraceFiles();
+        final List<ClassContainer> visitedClassesFromTraceEditor =
+            readVisitedClassesFromEditorTraceFiles(pathContainer);
 
         return addParsedMethodsToVisitedClasses(parsedMethodNamesPerClass, visitedClassesFromTraceEditor);
     }
@@ -403,52 +403,54 @@ public class ParsingServiceImpl implements ParsingService
         return parsedMethodNamesPerClass;
     }
 
-    //TODO hard coded (and wrong) directories, move file reading to file service
-    private List<ClassContainer> readVisitedClassesFromEditorTraceFiles() throws IOException
+    //TODO move file reading to file service
+    private List<ClassContainer> readVisitedClassesFromEditorTraceFiles(
+        PathContainer pathContainer)
     {
-        final String userRunDir = System.getProperties().getProperty("user.dir");
-        final String pathToWrite = userRunDir + "/src/test/resources/";
-        final JSONParser jsonParser = new JSONParser();
+
+        final Path pathToFile = pathContainer.getTraceEditorPath();
         final List<ClassContainer> classContainerList = new ArrayList<>();
 
-        try (Stream<Path> pathsOfFiles = Files.walk(Paths.get(pathToWrite), 1))
+        try
         {
-            pathsOfFiles.forEach(path -> {
-                if (!Files.isDirectory(path))
+            final List<String> strings = Files.readAllLines(pathToFile);
+            final JSONParser jsonParser = new JSONParser();
+
+            for (String line : strings)
+            {
+                final String timeStamp = StringUtils.substringBefore(line, ":");
+                final String jsonToWrite = StringUtils.substringAfter(line, ":");
+                final JSONObject jsonObject = (JSONObject) jsonParser.parse(jsonToWrite);
+
+                jsonObject.put("opened", timeStamp);
+
+                final String fullFileName = (String) jsonObject.get("fileName");
+
+                if (StringUtils.containsIgnoreCase(fullFileName, ".java"))
                 {
-                    try (FileReader fileReader = new FileReader(path.toFile()))
-                    {
-                        final JSONObject jsonObject = (JSONObject) jsonParser.parse(fileReader);
-                        final String fullFileName = (String) jsonObject.get("fileName");
-
-                        if (StringUtils.containsIgnoreCase(fullFileName, ".java"))
-                        {
-                            final String fullJavaFilePathWithoutExtension =
-                                StringUtils.substringBefore(fullFileName, ".java");
-                            final String subString =
-                                StringUtils.substringAfter(fullJavaFilePathWithoutExtension, "java\\");
-                            final String[] split = StringUtils.split(subString, "\\");
-                            final String fullyQualifiedClassName = split != null ? StringUtils.join(split, '.') : "";
-                            final String packageName = StringUtils.substringBeforeLast(fullyQualifiedClassName, ".");
-                            final String simpleClassName = StringUtils.substringAfterLast(fullyQualifiedClassName, ".");
-                            final ClassContainer classContainer = new ClassContainer();
-                            final String opened = (String) jsonObject.get("opened");
-                            classContainer.setOpenedFrom(Long.valueOf(opened));
-                            final String closed = (String) jsonObject.get("closed");
-                            classContainer.setClosedAt(Long.valueOf(closed));
-                            classContainer.setFullyQualifiedClassName(fullyQualifiedClassName);
-                            classContainer.setSimpleClassName(simpleClassName);
-                            classContainer.setPackageName(packageName);
-                            classContainerList.add(classContainer);
-                        }
-                    }
-                    catch (NumberFormatException | ParseException | IOException e)
-                    {
-                        LOG.error("exception parsing trace editor files occurred:", e);
-                    }
+                    final String fullJavaFilePathWithoutExtension =
+                        StringUtils.substringBefore(fullFileName, ".java");
+                    final String subString =
+                        StringUtils.substringAfter(fullJavaFilePathWithoutExtension, "java\\");
+                    final String[] split = StringUtils.split(subString, "\\");
+                    final String fullyQualifiedClassName = split != null ? StringUtils.join(split, '.') : "";
+                    final String packageName = StringUtils.substringBeforeLast(fullyQualifiedClassName, ".");
+                    final String simpleClassName = StringUtils.substringAfterLast(fullyQualifiedClassName, ".");
+                    final ClassContainer classContainer = new ClassContainer();
+                    final String opened = (String) jsonObject.get("opened");
+                    classContainer.setOpenedFrom(Long.valueOf(opened));
+                    final String closed = (String) jsonObject.get("closed");
+                    classContainer.setClosedAt(Long.valueOf(closed));
+                    classContainer.setFullyQualifiedClassName(fullyQualifiedClassName);
+                    classContainer.setSimpleClassName(simpleClassName);
+                    classContainer.setPackageName(packageName);
+                    classContainerList.add(classContainer);
                 }
-
-            });
+            }
+        }
+        catch (IOException | NumberFormatException | ParseException e)
+        {
+            e.printStackTrace();
         }
 
         return classContainerList;

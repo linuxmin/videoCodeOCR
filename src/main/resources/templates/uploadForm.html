@@ -74,12 +74,18 @@
                     <input class="row col-2 margin" type=file name="file">
                     <input class="row col-2 margin" type="submit" th:formenctype="'multipart/form-data'"
                            th:formaction="'/pupil'" value="Upload Pupil Files"/></td>
+                    <input class="btn btn-success col-2" type="submit" value="Delete Video"
+                           th:formaction="'/dropVideo'">
+                    <input class="btn btn-success col-2" type="submit" value="Delete Pupil Files"
+                           th:formaction="'/dropPupilFiles'">
                 </form>
 
                 <div class="form-group blu-margin container ">
-                    <select class="form-control" th:field="${vizFiles}"  id="dropFile">
+                    <select class="form-control" th:field="${vizFiles}" id="dropFile">
                         <option value="0">Uploaded Viz Data Files:</option>
-                        <option th:each="vizFile: ${vizFiles}" th:if="${vizFile.getPath().toString().contains(file.getPath().substring(file.getPath().lastIndexOf('/') +1, file.getPath.lastIndexOf('.')))}" th:value="${vizFile}" th:text="${vizFile}"></option>
+                        <option th:each="vizFile: ${vizFiles}"
+                                th:if="${vizFile.getPath().toString().contains(file.getPath().substring(file.getPath().lastIndexOf('/') +1, file.getPath.lastIndexOf('.')))}"
+                                th:value="${vizFile}" th:text="${vizFile}"></option>
                     </select>
                 </div>
                 <br/>

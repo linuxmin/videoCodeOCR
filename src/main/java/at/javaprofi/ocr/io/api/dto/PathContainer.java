@@ -8,13 +8,6 @@ import java.nio.file.Path;
 public class PathContainer
 {
 
-    private Path graphLinkPath;
-
-    public Path getGraphLinkPath()
-    {
-        return graphLinkPath;
-    }
-
     public static final class PathContainerBuilder
     {
         private Path videoPath;
@@ -23,7 +16,7 @@ public class PathContainer
         private Path extractedLinesPath;
         private Path methodMatchesPath;
         private Path totalDurationPath;
-        private Path graphLinkPath;
+        private Path traceEditorPath;
 
         public PathContainerBuilder()
         {
@@ -52,9 +45,9 @@ public class PathContainer
             return this;
         }
 
-        public PathContainerBuilder graphLinkPath(Path graphLinkPath)
+        public PathContainerBuilder traceEditorPath(Path traceEditorPath)
         {
-            this.graphLinkPath = graphLinkPath;
+            this.traceEditorPath = traceEditorPath;
             return this;
         }
 
@@ -90,6 +83,8 @@ public class PathContainer
 
     private final Path totalDurationPath;
 
+    private final Path traceEditorPath;
+
     public PathContainer(PathContainerBuilder pathContainerBuilder)
     {
         this.videoPath = pathContainerBuilder.videoPath;
@@ -98,7 +93,7 @@ public class PathContainer
         this.extractedLinesPath = pathContainerBuilder.extractedLinesPath;
         this.methodMatchesPath = pathContainerBuilder.methodMatchesPath;
         this.totalDurationPath = pathContainerBuilder.totalDurationPath;
-        this.graphLinkPath = pathContainerBuilder.graphLinkPath;
+        this.traceEditorPath = pathContainerBuilder.traceEditorPath;
     }
 
     public Path getVideoPath()
@@ -129,5 +124,10 @@ public class PathContainer
     public Path getTotalDurationPath()
     {
         return totalDurationPath;
+    }
+
+    public Path getTraceEditorPath()
+    {
+        return traceEditorPath;
     }
 }
