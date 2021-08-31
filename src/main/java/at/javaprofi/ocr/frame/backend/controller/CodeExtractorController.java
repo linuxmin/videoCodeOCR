@@ -37,23 +37,17 @@ public class CodeExtractorController
     }
 
     @RequestMapping(value = "/frame")
-    public String handleFrameExtraction(@RequestParam String fileName)
+    public String handleFrameExtraction(@RequestParam String fileName, @RequestParam Integer x, @RequestParam Integer y,
+        @RequestParam Integer width, @RequestParam Integer height)
     {
-        frameExtractorService.extractFrames(fileName, new Rectangle(422, 90, 532, 755));
-        return "redirect:/upload";
+        frameExtractorService.extractFrames(fileName, new Rectangle(x, y, width, height));
+        return "redirect:/video";
     }
 
     @RequestMapping(value = "/ocr")
     public String handlePerformOCR(@RequestParam String fileName)
     {
-        recognitionService.extractTextFromFramesToJSON(fileName, true, "standard");
-        return "redirect:/upload";
-    }
-
-    @RequestMapping(value = "/visualize")
-    public String handleVisualization(@RequestParam String fileName)
-    {
-        recognitionService.extractTextFromFramesToJSON(fileName, false, "standard");
+        recognitionService.extractTextFromFramesToJSON(fileName, true);
         return "redirect:/video";
     }
 

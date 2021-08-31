@@ -20,32 +20,36 @@ var label = d3.arc()
     .outerRadius(radius)
     .innerRadius(radius - 80);
 
-d3.csv("examples/captures/threesurfaces/surfaces/normal_surface_gaze_distribution.csv", function (error, data) {
-    if (error) {
-        throw error;
-    }
-    var arc = g.selectAll(".arc")
-        .data(pie(data))
-        .enter().append("g")
-        .attr("class", "arc");
+function visualizePieChart(videoName) {
+    var s = "/extracted-dir/" + videoName + "/vizData/normal_surface_gaze_distribution.csv";
 
-    arc.append("path")
-        .attr("d", path)
-        .attr("fill", function (d) {
-            return color(d.data.surface_name);
-        }).on("mouseover", onMouseOver) //Add listener for the mouseover event
-        .on("mouseout", onMouseOut)   //Add listener for the mouseout event
+    d3.csv(s, function (error, data) {
+        if (error) {
+            throw error;
+        }
+        var arc = g.selectAll(".arc")
+            .data(pie(data))
+            .enter().append("g")
+            .attr("class", "arc");
 
-    console.log(arc)
+        arc.append("path")
+            .attr("d", path)
+            .attr("fill", function (d) {
+                return color(d.data.surface_name);
+            }).on("mouseover", onMouseOver) //Add listener for the mouseover event
+            .on("mouseout", onMouseOut)   //Add listener for the mouseout event
 
-    arc.append("text")
-        .attr("transform", function (d) {
-            return "translate(" + label.centroid(d) + ")";
-        })
-        .text(function (d) {
-            return d.data.surface_name;
-        });
-});
+        console.log(arc)
+
+        arc.append("text")
+            .attr("transform", function (d) {
+                return "translate(" + label.centroid(d) + ")";
+            })
+            .text(function (d) {
+                return d.data.surface_name;
+            });
+    });
+}
 
 svg.append("g")
     .attr("transform", "translate(" + (width / 2 - 120) + "," + 20 + ")")

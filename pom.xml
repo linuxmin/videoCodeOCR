@@ -20,9 +20,16 @@
         <dependency>
             <groupId>net.sourceforge.tess4j</groupId>
             <artifactId>tess4j</artifactId>
-            <version>4.4.0</version>
+            <version>4.5.0</version>
         </dependency>
 
+
+        <!-- https://mvnrepository.com/artifact/com.credibledoc/plantuml-core -->
+        <dependency>
+            <groupId>com.credibledoc</groupId>
+            <artifactId>plantuml-core</artifactId>
+            <version>1.0.40</version>
+        </dependency>
 
         <dependency>
             <groupId>com.github.kokorin.jaffree</groupId>
@@ -96,13 +103,6 @@
             <groupId>com.googlecode.json-simple</groupId>
             <artifactId>json-simple</artifactId>
             <version>1.1.1</version>
-        </dependency>
-
-        <!-- https://mvnrepository.com/artifact/net.sourceforge.plantuml/plantuml -->
-        <dependency>
-            <groupId>net.sourceforge.plantuml</groupId>
-            <artifactId>plantuml</artifactId>
-            <version>8059</version>
         </dependency>
 
 

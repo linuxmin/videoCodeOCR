@@ -1,7 +1,0 @@
-@startuml
-hide empty members
-skinparam roundcorner 20
-skinparam linetype ortho
-skinparam nodesep 200
-skinparam ranksep 200
-@enduml

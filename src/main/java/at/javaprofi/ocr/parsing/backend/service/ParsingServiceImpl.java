@@ -1,8 +1,6 @@
 package at.javaprofi.ocr.parsing.backend.service;
 
 import java.awt.*;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,7 +41,6 @@ import at.javaprofi.ocr.io.api.service.FileService;
 import at.javaprofi.ocr.parsing.api.ClassMethodVisitorAdapter;
 import at.javaprofi.ocr.parsing.api.enums.ColorForTime;
 import at.javaprofi.ocr.parsing.api.service.ParsingService;
-import net.sourceforge.plantuml.SourceStringReader;
 
 @Service
 public class ParsingServiceImpl implements ParsingService
@@ -133,18 +130,19 @@ public class ParsingServiceImpl implements ParsingService
         final List<MethodContainer> totalDurationMethodList =
             calculateTotalVisibilityDurationPerMatchedMethod(matchedMethodList);
 
-        writePlantUMLFile(visitedClassContainerList, totalDurationMethodList, matchedMethodList);
+        final String plantUMLString =
+            createPlantUMLString(visitedClassContainerList, totalDurationMethodList, matchedMethodList);
 
         LOG.info("Writing matches to json");
 
-        fileService.writeVisualizationDataToJSON(pathContainer,
+        fileService.writeVisualizationDataToJSON(pathContainer, plantUMLString,
             matchedMethodList, totalDurationMethodList
         );
 
         LOG.info("Finished writing json");
     }
 
-    private void writePlantUMLFile(List<ClassContainer> visitedClassContainerList,
+    private String createPlantUMLString(List<ClassContainer> visitedClassContainerList,
         List<MethodContainer> totalDurationMethodList,
         List<MethodContainer> matchedMethodList) throws IOException
     {
@@ -175,15 +173,7 @@ public class ParsingServiceImpl implements ParsingService
         buildPlantUmlMethodLinks(matchedMethodList, stringBuilder);
         stringBuilder.append("@enduml");
 
-        final String plantUmlString = stringBuilder.toString();
-
-        final SourceStringReader sourceStringReader = new SourceStringReader(plantUmlString);
-        sourceStringReader.generateImage(new File("plantuml.png"));
-
-        try (FileWriter file = new FileWriter("plantuml.txt"))
-        {
-            file.write(plantUmlString);
-        }
+        return stringBuilder.toString();
     }
 
     private void buildPlantUmlMethodLinks(List<MethodContainer> matchedMethodList, StringBuilder stringBuilder)
@@ -250,7 +240,7 @@ public class ParsingServiceImpl implements ParsingService
                 .append(previousMethodName)
                 .append("-[#black]>")
                 .append(className)
-                .append("::").append(currentMethod).append(" : x").append(linkCount).append('\n');
+                .append("::").append(currentMethod).append(" :x").append(linkCount).append('\n');
         });
     }
 
@@ -303,7 +293,7 @@ public class ParsingServiceImpl implements ParsingService
                         .append(StringUtils.remove(classContainer.getFullyQualifiedClassName(), "."))
                         .append(" #")
                         .append(ColorForTime.getColorForCurrentDuration(
-                            classContainer.getOpenedFrom()))  //TODO: because this is a distinct list, only first opening/closing is visualized, bette solution?
+                            classContainer.getOpenedFrom()))  //TODO: because this is a distinct list, only first opening/closing is visualized, other solution?
                         .append("-")
                         .append(ColorForTime.getColorForCurrentDuration(classContainer.getClosedAt()))
                         .append(" {")
@@ -367,21 +357,23 @@ public class ParsingServiceImpl implements ParsingService
     {
         LOG.info("Finding class matching candidates and creating class/methods map for method name similarity search");
 
-        final Map<String, List<String>> parsedMethodNamesPerClass = buildParsedClassMethodMap();
+        final Map<String, List<String>> parsedMethodNamesPerClass = buildParsedClassMethodMap(pathContainer);
         final List<ClassContainer> visitedClassesFromTraceEditor =
             readVisitedClassesFromEditorTraceFiles(pathContainer);
 
         return addParsedMethodsToVisitedClasses(parsedMethodNamesPerClass, visitedClassesFromTraceEditor);
     }
 
-    private Map<String, List<String>> buildParsedClassMethodMap() throws IOException
+    private Map<String, List<String>> buildParsedClassMethodMap(PathContainer pathContainer) throws IOException
     {
         final GenericVisitorAdapter<Map<String, List<String>>, Object> classMethodVisitorAdapter =
             new ClassMethodVisitorAdapter();
 
         LOG.info("Reading and parsing java source code from ground truth");
 
-        final Path pathToProjectRoot = Paths.get("../microservice-sales-app");
+        final Path pathToProjectRoot =
+            pathContainer.isMicroService() ? Paths.get("../microservice-sales-app") : Paths.get("../sales-app");
+
         final ProjectRoot projectRoot = new SymbolSolverCollectionStrategy().collect(pathToProjectRoot);
 
         final Map<String, List<String>> parsedMethodNamesPerClass = new HashMap<>();

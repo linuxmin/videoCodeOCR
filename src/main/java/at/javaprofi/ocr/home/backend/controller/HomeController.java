@@ -36,15 +36,15 @@ public class HomeController
         return "home";
     }
 
-    @GetMapping("/visualization")
-    public String showVisualization()
-    {
-        return "graphslider";
-    }
 
     @GetMapping("/codeviz")
-    public String showVCodeVisualization()
+    public String showVCodeVisualization(Model model)
     {
+        model.addAttribute("files", fileService.loadVideos().map(
+                path -> MvcUriComponentsBuilder.fromMethodName(FileUploadController.class,
+                    "serveFile", path.getFileName().toString()).build())
+            .collect(Collectors.toList()));
+
         return "piechart";
     }
 
@@ -58,11 +58,5 @@ public class HomeController
             .collect(Collectors.toList()));
 
         return "visualization";
-    }
-
-    @GetMapping("/testviz")
-    public String showResults()
-    {
-        return "testviz";
     }
 }

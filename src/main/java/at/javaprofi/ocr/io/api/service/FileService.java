@@ -82,7 +82,8 @@ public interface FileService
      */
     PathContainer createDirectoriesAndRetrievePathContainerFromVideoFileName(String fileName);
 
-    void writeVisualizationDataToJSON(PathContainer pathContainer, List<MethodContainer> matchedMethodList,
+    void writeVisualizationDataToJSON(PathContainer pathContainer, String plantUMLString,
+        List<MethodContainer> matchedMethodList,
         List<MethodContainer> totalDurationMethodList);
 
     void storePupilFile(MultipartFile file, String fileName);

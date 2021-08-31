@@ -2,6 +2,8 @@ package at.javaprofi.ocr.io.api.dto;
 
 import java.nio.file.Path;
 
+import org.apache.commons.lang3.StringUtils;
+
 /**
  * POJO container used to store needed paths for video processing
  */
@@ -129,5 +131,10 @@ public class PathContainer
     public Path getTraceEditorPath()
     {
         return traceEditorPath;
+    }
+
+    public boolean isMicroService()
+    {
+        return videoPath != null && StringUtils.containsIgnoreCase(videoPath.getFileName().toString(), "micro");
     }
 }

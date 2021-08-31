@@ -44,7 +44,7 @@ public class RecognitionServiceImpl implements RecognitionService
     }
 
     @Override
-    public void extractTextFromFramesToJSON(String fileName, boolean hocr, String trainedDataQuality)
+    public void extractTextFromFramesToJSON(String fileName, boolean hocr)
     {
 
         final PathContainer pathContainer =
@@ -65,7 +65,7 @@ public class RecognitionServiceImpl implements RecognitionService
         final Stream<Path> parallelStream = pathStream.parallel();
 
         parallelStream.forEach(framePath -> {
-            final Tesseract tesseract1 = getTesseractInstance(hocr, trainedDataQuality);
+            final Tesseract tesseract1 = getTesseractInstance(hocr);
             try
             {
                 longAdder.decrement();
@@ -155,11 +155,11 @@ public class RecognitionServiceImpl implements RecognitionService
         return wordContainer;
     }
 
-    private Tesseract getTesseractInstance(boolean hocr, String trainedDataQuality)
+    private Tesseract getTesseractInstance(boolean hocr)
     {
         final Tesseract tesseract = new Tesseract();
 
-        tesseract.setDatapath("/usr/local/Cellar/tesseract/4.1.1/share/traineddata_" + trainedDataQuality);
+        tesseract.setDatapath("/usr/local/Cellar/tesseract/4.1.1/share/tessdata");
         tesseract.setLanguage("eng");
         tesseract.setHocr(hocr);
         tesseract.setTessVariable("user_defined_dpi", "300");

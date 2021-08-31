@@ -33,6 +33,8 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.credibledoc.plantuml.svggenerator.SvgGeneratorService;
+
 import at.javaprofi.ocr.frame.api.dto.MethodContainer;
 import at.javaprofi.ocr.io.api.StorageProperties;
 import at.javaprofi.ocr.io.api.dto.PathContainer;
@@ -315,11 +317,33 @@ public class FileServiceImpl implements FileService
     }
 
     @Override
-    public void writeVisualizationDataToJSON(PathContainer pathContainer, List<MethodContainer> matchedMethodList,
+    public void writeVisualizationDataToJSON(PathContainer pathContainer, String plantUMLString,
+        List<MethodContainer> matchedMethodList,
         List<MethodContainer> totalDurationMethodList)
     {
+        writePlantUMLFiles(plantUMLString, pathContainer.getVisualizationPath());
         writeMethodContainerListToJSON(matchedMethodList, pathContainer.getMethodMatchesPath());
         writeMethodContainerListToJSON(totalDurationMethodList, pathContainer.getTotalDurationPath());
+    }
+
+    private void writePlantUMLFiles(String plantUMLString, Path visualizationPath)
+    {
+        final String svgFromUml = SvgGeneratorService.getInstance().generateSvgFromPlantUml(plantUMLString);
+
+        try
+        {
+            final String vizPathString = visualizationPath.toString();
+
+            Files.writeString(Path.of(vizPathString, "plantuml.txt"), plantUMLString);
+            Files.writeString(Path.of(vizPathString, "plantuml.svg"),
+                svgFromUml);
+
+        }
+        catch (IOException e)
+        {
+            LOG.error("writing uml string failed", e);
+        }
+
     }
 
     private void writeMethodContainerListToJSON(List<MethodContainer> matchedMethodList, Path visualizationPath)
