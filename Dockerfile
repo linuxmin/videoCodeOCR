@@ -2,7 +2,6 @@
 #Run: docker run --name ocr -t -i -p 8083:8083 harb/ocr
 
 FROM alpine:edge
-
 # install java 11
 RUN \
   apk add --no-cache openjdk11
@@ -40,6 +39,7 @@ RUN apk add  --no-cache ttf-dejavu
 #Install git and clone micro-service and monolith sales app
 RUN apk add  --no-cache git
 RUN git clone https://github.com/debbienuta/microservice-sales-app.git
+RUN git clone https://github.com/debbienuta/sales-app.git
 
 # Open the port
 EXPOSE 8083
