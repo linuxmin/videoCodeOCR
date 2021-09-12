@@ -10,7 +10,7 @@ Open a terminal and change to the project's root directory
 
 Run "mvn clean install" to execute the clean and install Maven goals
 
-Run "docker build -t harb/ocr ." to build the docker image (this can take a while, use "-{}-progress plain" as parameter
+Run "docker build -t harb/ocr ." to build the docker image (this can take a while, use "--progress plain" as parameter
 for verbose progress output)
 
 Run "docker run --name ocr -t -i -p 8083:8083 harb/ocr" to run the container
