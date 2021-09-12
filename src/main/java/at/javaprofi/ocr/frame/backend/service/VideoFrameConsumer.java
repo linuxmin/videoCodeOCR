@@ -1,5 +1,6 @@
 package at.javaprofi.ocr.frame.backend.service;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -23,11 +24,13 @@ public class VideoFrameConsumer implements FrameConsumer
 
     private final Path pathToDstDir;
     private final AtomicLong duration;
+    private final Rectangle boundingBox;
 
-    public VideoFrameConsumer(Path pathToDstDir, AtomicLong duration)
+    public VideoFrameConsumer(Path pathToDstDir, AtomicLong duration, Rectangle boundingBox)
     {
         this.pathToDstDir = pathToDstDir;
         this.duration = duration;
+        this.boundingBox = boundingBox;
     }
 
     @Override
@@ -45,11 +48,13 @@ public class VideoFrameConsumer implements FrameConsumer
             return;
         }
 
-        final BufferedImage invertedColor = ImageHelper.invertImageColor(frame.getImage());
-        final BufferedImage subImage = ImageHelper.getSubImage(invertedColor, 372, 83, 645, 776);
-        String filename = duration.get()
+        final BufferedImage subImage = boundingBox != null ?
+            ImageHelper.getSubImage(frame.getImage(), boundingBox.x, boundingBox.y, boundingBox.width,
+                boundingBox.height) : frame.getImage();
+
+        final String filename = duration.get()
             + ".jpg";
-        Path output = pathToDstDir.resolve(filename);
+        final Path output = pathToDstDir.resolve(filename);
 
         try
         {
@@ -59,6 +64,5 @@ public class VideoFrameConsumer implements FrameConsumer
         {
             e.printStackTrace();
         }
-
     }
 }

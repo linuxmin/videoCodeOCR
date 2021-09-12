@@ -20,19 +20,21 @@
         <dependency>
             <groupId>net.sourceforge.tess4j</groupId>
             <artifactId>tess4j</artifactId>
-            <version>4.4.0</version>
+            <version>4.5.0</version>
+        </dependency>
+
+
+        <!-- https://mvnrepository.com/artifact/com.credibledoc/plantuml-core -->
+        <dependency>
+            <groupId>com.credibledoc</groupId>
+            <artifactId>plantuml-core</artifactId>
+            <version>1.0.40</version>
         </dependency>
 
         <dependency>
             <groupId>com.github.kokorin.jaffree</groupId>
             <artifactId>jaffree</artifactId>
-            <version>0.10.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-csv</artifactId>
-            <version>1.4</version>
+            <version>2021.08.04</version>
         </dependency>
 
         <dependency>
@@ -51,6 +53,12 @@
             <groupId>com.github.javaparser</groupId>
             <artifactId>javaparser-symbol-solver-core</artifactId>
             <version>3.20.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>guru.nidi</groupId>
+            <artifactId>graphviz-java</artifactId>
+            <version>0.18.1</version>
         </dependency>
 
         <dependency>
@@ -89,17 +97,14 @@
             <artifactId>commons-text</artifactId>
             <version>1.9</version>
         </dependency>
-        <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>1.2</version>
-        </dependency>
+
         <!-- https://mvnrepository.com/artifact/com.googlecode.json-simple/json-simple -->
         <dependency>
             <groupId>com.googlecode.json-simple</groupId>
             <artifactId>json-simple</artifactId>
             <version>1.1.1</version>
         </dependency>
+
 
     </dependencies>
 
@@ -115,7 +120,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.0</version>
                 <configuration>
-                    <release>11</release>
+                    <source>11</source>
+                    <target>11</target>
                 </configuration>
             </plugin>
         </plugins>

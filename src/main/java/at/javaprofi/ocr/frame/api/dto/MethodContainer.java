@@ -1,4 +1,4 @@
-package at.javaprofi.ocr.frame.api.word;
+package at.javaprofi.ocr.frame.api.dto;
 
 import java.awt.*;
 

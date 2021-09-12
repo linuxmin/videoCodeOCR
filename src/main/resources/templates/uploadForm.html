@@ -5,16 +5,18 @@
     <link href='https://fonts.googleapis.com/css?family=Duru Sans|Faster One' rel='stylesheet'>
     <Latest compiled and minified CSS -->
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" type="text/css" th:href="@{http_maxcdn.bootstrapcdn.com_bootstrap_4.5.2_css_bootstrap.css}">
-    <link rel="stylesheet" type="text/css" th:href="@{test.css}">
+    <link rel="stylesheet" type="text/css" th:href="@{uploadForm.css}">
 
     <!-- jQuery library -->
     <script type="text/javascript" th:src="@{jquery.min.js}"></script>
-    <script type="text/javascript" th:src="@{bootstrap.bundle.js}"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-gtEjrD/SeCtmISkJkNUaaKMoLD0//ElJ19smozuHV6z3Iehds+3Ulb9Bn9Plx0x4"
+            crossorigin="anonymous"></script>
 
 
     <!-- Latest compiled JavaScript -->
-    <script type="text/javascript" th:src="@{http_maxcdn.bootstrapcdn.com_bootstrap_4.5.2_js_bootstrap.js}"></script>
     <meta charset="UTF-8">
     <title>Test</title>
 </head>
@@ -25,21 +27,13 @@
 <div id="wrapper">
     <header class="col-12 clear">
         <strong id="projectheader">videoOCR Source Code Extractor</strong>
+        <br/>
         <div id="nav_container">
             <ul class="nav nav-tabs">
                 <li class="nav-item"><a class="nav-link" th:href="@{home}">Home</a></li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">OCR Extraction</a>
-                    <div class="dropdown-menu">
-                        <a class="dropdown-item" th:href="@{video}">Choose/Manage Videos</a>
-                        <a class="dropdown-item" th:href="@{testviz}">Results</a>
-                        <a class="dropdown-item" href="#">Manage HCR</a>
-                        <a class="dropdown-item" href="#">Manage Mapping</a>
-                    </div>
-                </li>
+                <li class="nav-item"><a class="nav-link" th:href="@{video}">Extraction</a></li>
                 <li class="nav-item"><a class="nav-link" th:href="@{animation}">Path Visualization</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{visualization}">Slider Visualization</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{codeviz}" href="#">Eye Gaze Duration</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{codeviz}">Eye Gaze Duration</a></li>
             </ul>
         </div>
     </header>
@@ -60,35 +54,83 @@
         </div>
 
         <div class="container">
-            <ul>
-                <table class="table">
-                    <tr th:each="file : ${files}">
-                        <td><a th:href="${file}" th:text="${file}"/></td>
-                        <td><form th:action="@{/frame}"  method="post">
+            <div th:each="file : ${files}">
+                <div class="border-bottom border-primary border-4">
+                    <form class="row gy-2 gx-3 align-items-center" th:action="@{/frame}" method="post">
+                        <div class="col-auto">
+                            <a class="btn btn-primary" th:href="${file}"
+                               th:text="${new StringBuilder('Download ').append(file.getPath().substring(file.getPath().lastIndexOf('/') +1, file.getPath.lastIndexOf('.'))).toString()}"/>
                             <input type="hidden" th:value="${file}" name="fileName"/>
-                            <input type="submit" value="Extract Frames"/>
-                        </form>
-                        </td>
-                        <td><form th:action="@{/ocr}"  method="post">
-                            <input type="hidden" th:value="${file}" name="fileName"/>
-                            <input type="submit" value="Perform OCR"/>
-                        </form>
-                        </td>
-                        <td><form th:action="@{/visualize}"  method="post">
-                            <input type="hidden" th:value="${file}" name="fileName"/>
-                            <input type="submit" value="Visualize Code"/>
-                        </form>
-                        </td>
-                        <td><form th:action="@{/classMethodJSON}"  method="post">
-                            <input type="hidden" th:value="${file}" name="fileName"/>
-                            <input type="submit" value="CreateMethodClassCSV"/>
-                        </form>
-                        </td>
-                    </tr>
-                </table>
-            </ul>
+                        </div>
+                        <div class="row gy-2 gx-3 align-items-center border border-3">
+                            <div class="col-auto">
+                                <input class="btn btn-success" type="submit" value="Extract Frames"
+                                       th:formaction="'/frame'">
+                                <label for="width">Width:</label>
+                            </div>
+                            <div class="col-auto">
+                                <input type="number" id="width" name="width" min="1" max="4000">
+                                <label for="height">Height:</label>
+                            </div>
+                            <div class="col-auto">
+                                <input type="number" id="height" name="height" min="1" max="4000">
+                            </div>
+                            <div class="col-auto">
+                                <label for="x">x:</label>
+                                <input type="number" id="x" name="x" min="1" max="4000">
+                            </div>
+                            <div class="col-auto">
+                                <label for="y">y:</label>
+                                <input type="number" id="y" name="y" min="1" max="4000">
+                            </div>
+                        </div>
+                        <div class="row gy-2 gx-3 align-items-center">
+                            <div class="col-auto">
+                                <input class="btn  btn-success" type="submit" value="Perform OCR"
+                                       th:formaction="'/ocr'">
+                            </div>
+                            <div class="col-auto">
+                                <input class="btn btn-success" type="submit" value="Create Viz Data"
+                                       th:formaction="'/classMethodJSON'">
+                            </div>
+                        </div>
+
+
+                        <div class="col-auto">
+                            <input type=file name="file">
+                            <input type="submit" th:formenctype="'multipart/form-data'"
+                                   th:formaction="'/pupil'" value="Upload Pupil Files"/></td>
+                        </div>
+                        <div class="row gy-2 gx-3 align-items-center">
+                            <div class="col-auto">
+                                <div class="form-group blu-margin container " th:each="vizFile: ${vizFiles}">
+
+                                    <a
+                                            th:if="${vizFile.getPath().toString().contains(file.getPath().substring(file.getPath().lastIndexOf('/') +1, file.getPath.lastIndexOf('.')))}"
+                                            th:value="${vizFile}" th:href="${vizFile}" th:text="${vizFile}">
+                                    </a>
+
+                                </div>
+
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <input class="btn btn-danger" type="submit" value="Delete Video"
+                                   th:formaction="'/dropVideo'">
+                        </div>
+                        <div class="col-auto">
+                            <input class="btn btn-danger" type="submit" value="Delete Pupil Files"
+                                   th:formaction="'/dropPupilFiles'">
+                        </div>
+                        <br/>
+                </div>
+                </form>
+            </div>
+            <br/>
         </div>
-    </main>
+
+</div>
+</main>
 </div>
 </body>
 </html>

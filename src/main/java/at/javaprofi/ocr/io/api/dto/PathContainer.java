@@ -1,6 +1,8 @@
-package at.javaprofi.ocr.io.api.dao;
+package at.javaprofi.ocr.io.api.dto;
 
 import java.nio.file.Path;
+
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * POJO container used to store needed paths for video processing
@@ -12,10 +14,11 @@ public class PathContainer
     {
         private Path videoPath;
         private Path framesPath;
-        private Path jsonPath;
+        private Path visualizationPath;
         private Path extractedLinesPath;
         private Path methodMatchesPath;
         private Path totalDurationPath;
+        private Path traceEditorPath;
 
         public PathContainerBuilder()
         {
@@ -38,9 +41,15 @@ public class PathContainer
             return this;
         }
 
-        public PathContainerBuilder jsonPath(Path jsonPath)
+        public PathContainerBuilder visualizationPath(Path visualizationPath)
         {
-            this.jsonPath = jsonPath;
+            this.visualizationPath = visualizationPath;
+            return this;
+        }
+
+        public PathContainerBuilder traceEditorPath(Path traceEditorPath)
+        {
+            this.traceEditorPath = traceEditorPath;
             return this;
         }
 
@@ -68,7 +77,7 @@ public class PathContainer
 
     private final Path framesPath;
 
-    private final Path jsonPath;
+    private final Path visualizationPath;
 
     private final Path extractedLinesPath;
 
@@ -76,14 +85,17 @@ public class PathContainer
 
     private final Path totalDurationPath;
 
+    private final Path traceEditorPath;
+
     public PathContainer(PathContainerBuilder pathContainerBuilder)
     {
         this.videoPath = pathContainerBuilder.videoPath;
         this.framesPath = pathContainerBuilder.framesPath;
-        this.jsonPath = pathContainerBuilder.jsonPath;
+        this.visualizationPath = pathContainerBuilder.visualizationPath;
         this.extractedLinesPath = pathContainerBuilder.extractedLinesPath;
         this.methodMatchesPath = pathContainerBuilder.methodMatchesPath;
         this.totalDurationPath = pathContainerBuilder.totalDurationPath;
+        this.traceEditorPath = pathContainerBuilder.traceEditorPath;
     }
 
     public Path getVideoPath()
@@ -96,9 +108,9 @@ public class PathContainer
         return framesPath;
     }
 
-    public Path getJsonPath()
+    public Path getVisualizationPath()
     {
-        return jsonPath;
+        return visualizationPath;
     }
 
     public Path getExtractedLinesPath()
@@ -114,5 +126,15 @@ public class PathContainer
     public Path getTotalDurationPath()
     {
         return totalDurationPath;
+    }
+
+    public Path getTraceEditorPath()
+    {
+        return traceEditorPath;
+    }
+
+    public boolean isMicroService()
+    {
+        return videoPath != null && StringUtils.containsIgnoreCase(videoPath.getFileName().toString(), "micro");
     }
 }

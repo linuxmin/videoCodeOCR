@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
@@ -19,14 +19,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import at.javaprofi.ocr.frame.api.word.WordContainer;
-import at.javaprofi.ocr.io.api.dao.PathContainer;
+import at.javaprofi.ocr.frame.api.dto.WordContainer;
+import at.javaprofi.ocr.io.api.dto.PathContainer;
 import at.javaprofi.ocr.io.api.service.FileService;
 import at.javaprofi.ocr.recognition.api.service.RecognitionService;
 import net.sourceforge.tess4j.ITessAPI;
 import net.sourceforge.tess4j.ITesseract;
 import net.sourceforge.tess4j.OCRResult;
-import net.sourceforge.tess4j.Tesseract1;
+import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
 import net.sourceforge.tess4j.Word;
 
@@ -44,7 +44,7 @@ public class RecognitionServiceImpl implements RecognitionService
     }
 
     @Override
-    public void extractTextFromFramesToJSON(String fileName)
+    public void extractTextFromFramesToJSON(String fileName, boolean hocr)
     {
 
         final PathContainer pathContainer =
@@ -53,22 +53,27 @@ public class RecognitionServiceImpl implements RecognitionService
         final Stream<Path> pathStream = fileService.retrieveContainingFilesAsPathStream(
             pathContainer.getFramesPath());
 
-        final List<WordContainer> wordContainerList = new ArrayList<>();
-        final List<WordContainer> synchronizedWordContainerList = Collections.synchronizedList(wordContainerList);
+        final long count = fileService.retrieveContainingFilesAsPathStream(
+            pathContainer.getFramesPath()).count();
 
-        final Stream<Path> parallelStream = pathStream.parallel();
+        final LongAdder longAdder = new LongAdder();
+        longAdder.add(count);
+        final List<WordContainer> wordContainerList = new ArrayList<>();
 
         LOG.info("extracting lines of: {}", fileName);
 
-        final AtomicLong frames = new AtomicLong(7850);
-
-        final Tesseract1 tesseractInstance = getTesseractInstance();
+        final Stream<Path> parallelStream = pathStream.parallel();
 
         parallelStream.forEach(framePath -> {
-            final Tesseract1 tesseract1 = getTesseractInstance();
+            final Tesseract tesseract1 = getTesseractInstance(hocr);
             try
             {
-                synchronizedWordContainerList.add(retrieveWordContainerForFrame(tesseract1, framePath.toFile()));
+                longAdder.decrement();
+                if (longAdder.sum() % 10 == 0)
+                {
+                    LOG.info("extracted text from {} frames of {}", longAdder.sum(), count);
+                }
+                wordContainerList.add(retrieveWordContainerForFrame(tesseract1, framePath.toFile()));
 
             }
             catch (TesseractException e)
@@ -79,13 +84,13 @@ public class RecognitionServiceImpl implements RecognitionService
         writeWordContainerListToJSON(wordContainerList, pathContainer.getExtractedLinesPath());
     }
 
-    private void writeWordContainerListToJSON(List<WordContainer> wordContainerList, Path jsonPath)
+    private void writeWordContainerListToJSON(List<WordContainer> wordContainerList, Path visualizationPath)
     { //First Employee
 
-        LOG.info("writing extracted lines to json file: {}", jsonPath);
+        LOG.info("writing extracted lines to json file: {}", visualizationPath);
 
         //Write JSON file
-        try (FileWriter file = new FileWriter(jsonPath.toFile()))
+        try (FileWriter file = new FileWriter(visualizationPath.toFile()))
         {
             final JSONArray extractedJSON = new JSONArray();
 
@@ -116,8 +121,7 @@ public class RecognitionServiceImpl implements RecognitionService
             file.write(extractedJSON.toJSONString());
             file.flush();
 
-            LOG.info("finished writing json file: {}", jsonPath);
-
+            LOG.info("finished writing json file: {}", visualizationPath);
 
         }
         catch (IOException e)
@@ -126,17 +130,16 @@ public class RecognitionServiceImpl implements RecognitionService
         }
     }
 
-    private WordContainer retrieveWordContainerForFrame(Tesseract1 tesseract1, File frameFile) throws
+    private WordContainer retrieveWordContainerForFrame(Tesseract tesseract1, File frameFile) throws
         TesseractException
     {
         final OCRResult documentsWithResults;
         final String absoluteFileString = frameFile.getAbsoluteFile().toString();
+        final String duration = StringUtils.getDigits(frameFile.getName());
         documentsWithResults =
-            tesseract1.createDocumentsWithResults(absoluteFileString, "test.xml",
+            tesseract1.createDocumentsWithResults(absoluteFileString, absoluteFileString,
                 Collections.singletonList(ITesseract.RenderedFormat.HOCR),
                 ITessAPI.TessPageIteratorLevel.RIL_TEXTLINE);
-
-        final String duration = StringUtils.getDigits(absoluteFileString);
 
         final WordContainer wordContainer = new WordContainer();
         if (StringUtils.isNoneBlank(duration))
@@ -152,13 +155,14 @@ public class RecognitionServiceImpl implements RecognitionService
         return wordContainer;
     }
 
-    private Tesseract1 getTesseractInstance()
+    private Tesseract getTesseractInstance(boolean hocr)
     {
-        final Tesseract1 tesseract = new Tesseract1();
+        final Tesseract tesseract = new Tesseract();
+
         tesseract.setDatapath("/usr/local/Cellar/tesseract/4.1.1/share/tessdata");
         tesseract.setLanguage("eng");
-        tesseract.setHocr(false);
-        tesseract.setTessVariable("user_defined_dpi", "70");
+        tesseract.setHocr(hocr);
+        tesseract.setTessVariable("user_defined_dpi", "300");
 
         return tesseract;
     }

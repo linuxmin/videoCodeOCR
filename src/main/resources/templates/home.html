@@ -7,15 +7,66 @@
     <Latest compiled and minified CSS -->
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" th:href="@{http_maxcdn.bootstrapcdn.com_bootstrap_4.5.2_css_bootstrap.css}">
-    <link rel="stylesheet" type="text/css" th:href="@{test.css}">
+    <link rel="stylesheet" type="text/css" th:href="@{uploadForm.css}">
 
     <!-- jQuery library -->
     <script type="text/javascript" th:src="@{jquery.min.js}"></script>
+
+
     <script type="text/javascript" th:src="@{bootstrap.bundle.js}"></script>
-    <script type="text/javascript" th:src="@{d3.js}"></script>
+
 
     <!-- Latest compiled JavaScript -->
     <script type="text/javascript" th:src="@{http_maxcdn.bootstrapcdn.com_bootstrap_4.5.2_js_bootstrap.js}"></script>
+
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <title>Chord Diagram</title>
+    <!-- <script type="text/javascript" src="http://fleetinbeing.net/d3/d3.layout.js"></script> -->
+    <!-- This comes from here: http://fleetinbeing.net/d3e/chord.html -->
+    <!-- Another example comes from here: http://exposedata.com/tutorial/chord/latest.html -->
+    <style>
+
+        path.link {
+            fill: none;
+            stroke: #666;
+            stroke-width: 1.5px;
+        }
+
+        circle {
+            fill: #ccc;
+            stroke: #fff;
+            stroke-width: 1.5px;
+        }
+
+
+        .outer .outerText {
+            display: none;
+            font: 8px sans-serif;
+        }
+
+        .outer .innerText {
+            display: none;
+            font: 8px sans-serif;
+        }
+
+        .outer:hover circle {
+            fill: #000;
+        }
+
+        .outer:hover .outerText {
+            display: inline;
+        }
+
+
+        .inner:hover .innerText {
+            display: inline;
+        }
+
+        .cell {
+            fill: none;
+            pointer-events: all;
+        }
+    </style>
     <meta charset="UTF-8">
     <title>Test</title>
 </head>
@@ -23,24 +74,39 @@
 <div id="wrapper">
     <header class="col-12 clear">
         <strong id="projectheader">videoOCR Source Code Extractor</strong>
+        <br/>
         <div id="nav_container">
             <ul class="nav nav-tabs">
                 <li class="nav-item"><a class="nav-link" th:href="@{home}">Home</a></li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">OCR Extraction</a>
-                    <div class="dropdown-menu">
-                        <a class="dropdown-item" th:href="@{video}">Choose/Manage Videos</a>
-                        <a class="dropdown-item" href="#">Manage Frames</a>
-                        <a class="dropdown-item" href="#">Manage HCR</a>
-                        <a class="dropdown-item" href="#">Manage Mapping</a>
-                    </div>
-                </li>
+                <li class="nav-item"><a class="nav-link" th:href="@{video}">Extraction</a></li>
                 <li class="nav-item"><a class="nav-link" th:href="@{animation}">Path Visualization</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{visualization}">Slider Visualization</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{codeviz}" href="#">Eye Gaze Duration</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{codeviz}">Eye Gaze Duration</a></li>
             </ul>
         </div>
     </header>
+    <body>
+    <div class="form-group blu-margin">
+        <select class="form-control" th:field="${files}" id="selectVideo">
+            <option value="0">select video</option>
+            <option th:each="file : ${files}"
+                    th:value="${file.getPath().substring(file.getPath().lastIndexOf('/') +1, file.getPath.lastIndexOf('.'))}"
+                    th:text="${file.getPath().substring(file.getPath().lastIndexOf('/') +1, file.getPath.lastIndexOf('.'))}"></option>
+        </select>
+        <button id="vizButton" onclick="visualizeInput($('#selectVideo option:selected' ).text())">Load</button>
+
+    </div>
+    <svg></svg>
+
+    </body>
 </div>
+<!--
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+-->
+<script src="http://marvl.infotech.monash.edu/webcola/cola.min.js"></script>
+<script type="text/javascript" th:src="@{d3v3.js}"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-ease@3"></script>
+<script type="text/javascript" th:src="@{circlepacknew.js}"></script>
+
+
 </body>
 </html>

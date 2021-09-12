@@ -1,8 +1,18 @@
 * {
-    box-sizing: border-box;
+
     font-family: 'Duru Sans', 'DejaVu Sans', 'Arial';
 }
 
+
+.container {
+    margin: 10px;
+}
+
+.margin {
+    margin-top: 10px;
+    margin-bottom: 10px;
+
+}
 html, body {
     margin: 0;
     padding: 0;
@@ -18,10 +28,6 @@ button {
     margin: 4px;
 }
 
-form {
-    display: table;
-
-}
 
 #projectheader {
     font-family: "Faster One", sans-serif;
@@ -81,60 +87,8 @@ p {
     position: relative;
 }
 
-.col-1 {
-    width: 100px;
+a, input{
+    margin: 2px;
 }
 
-.col-2 {
-    width: 220px;
-}
 
-.col-3 {
-    width: 340px;
-}
-
-.col-4 {
-    width: 460px;
-}
-
-.col-5 {
-    width: 580px;
-}
-
-.col-6 {
-    width: 700px;
-}
-
-.col-7 {
-    width: 820px;
-}
-
-.col-8 {
-    width: 940px;
-}
-
-.col-9 {
-    width: 1060px;
-}
-
-.col-10 {
-    width: 1180px;
-}
-
-.col-11 {
-    width: 1300px;
-}
-
-.col-12 {
-    width: 1420px;
-}
-
-[class*="col-"] {
-    float: left;
-    margin-left: 10px;
-    margin-right: 10px;
-}
-
-.clear, .row {
-    clear: both;
-}

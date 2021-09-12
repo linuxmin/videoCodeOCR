@@ -1,11 +1,8 @@
 spring:
   servlet:
     multipart:
-      max-file-size: 400MB
-      max-request-size: 400MB
-  config:
-    activate:
-      on-profile: dev
+      max-file-size: 4000MB
+      max-request-size: 4000MB
 logging:
   level:
     at.javaprofi.ocr.recognition.backend.service: info

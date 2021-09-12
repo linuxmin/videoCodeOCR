@@ -8,6 +8,7 @@ public interface RecognitionService
      * calculating matching lines from the original source code
      *
      * @param fileName file name of the video
+     * @param hocr
      */
-    void extractTextFromFramesToJSON(String fileName);
+    void extractTextFromFramesToJSON(String fileName, boolean hocr);
 }

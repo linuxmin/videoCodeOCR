@@ -43,8 +43,13 @@ public class FileUploadController
     public String listUploadedFiles(Model model)
     {
         model.addAttribute("files", fileService.loadVideos().map(
-            path -> MvcUriComponentsBuilder.fromMethodName(FileUploadController.class,
-                "serveFile", path.getFileName().toString()).build())
+                path -> MvcUriComponentsBuilder.fromMethodName(FileUploadController.class,
+                    "serveFile", path.getFileName().toString()).build())
+            .collect(Collectors.toList()));
+
+        model.addAttribute("vizFiles", fileService.loadVisualizationPathsForVideo().stream().map(
+                path -> MvcUriComponentsBuilder.fromMethodName(FileUploadController.class,
+                    "serveVizFile", path.toString()).build())
             .collect(Collectors.toList()));
 
         return "uploadForm";
@@ -56,7 +61,24 @@ public class FileUploadController
     {
         try
         {
-            Resource file = fileService.loadAsResource(filename);
+            Resource file = fileService.loadVideoAsResource(filename);
+
+            return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"" + file.getFilename() + "\"").body(file);
+        }
+        catch (MalformedURLException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @GetMapping("/vizFiles/{filename:.+}")
+    @ResponseBody
+    public ResponseEntity<Resource> serveVizFile(@PathVariable String filename)
+    {
+        try
+        {
+            Resource file = fileService.loadVizDataFileAsResource(filename);
 
             return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
                 "attachment; filename=\"" + file.getFilename() + "\"").body(file);
@@ -76,6 +98,15 @@ public class FileUploadController
         return "redirect:/video";
     }
 
+    @PostMapping("/pupil")
+    public String handlePupilDataUpload(@RequestParam("file") MultipartFile file,
+        @RequestParam("fileName") String fileName)
+    {
+        fileService.storePupilFile(file, fileName);
+
+        return "redirect:/video";
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public String handleFileUploadExceptions(RedirectAttributes redirectAttributes, RuntimeException ex)
     {
@@ -83,6 +114,22 @@ public class FileUploadController
         ex.printStackTrace();
         redirectAttributes.addFlashAttribute("message",
             ex.getMessage());
+
+        return "redirect:/video";
+    }
+
+    @PostMapping(value = "/dropPupilFiles")
+    public String handlePupilFilesDeletion(@RequestParam("fileName") String fileName)
+    {
+        fileService.deletePupilFilesForVideo(fileName);
+
+        return "redirect:/video";
+    }
+
+    @PostMapping(value = "/dropVideo")
+    public String handleVideoDeletion(@RequestParam("fileName") String fileName)
+    {
+        fileService.deleteVideo(fileName);
 
         return "redirect:/video";
     }
